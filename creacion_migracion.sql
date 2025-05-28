@@ -149,9 +149,9 @@ CREATE TABLE SILVER_CRIME_RELOADED.Cliente (
 
 CREATE TABLE SILVER_CRIME_RELOADED.Pedido (
     pedido_numero DECIMAL(18,0) NOT NULL,
-    pedido_cliente_id BIGINT,
-    pedido_nro_sucursal BIGINT,
-    pedido_estado_id INT,
+    pedido_cliente_id BIGINT NOT NULL,
+    pedido_nro_sucursal BIGINT NOT NULL,
+    pedido_estado_id INT NOT NULL,
     pedido_fecha DATETIME2(6),
     pedido_total DECIMAL(18,2),
     pedido_cancelacion_fecha DATETIME2(6),
@@ -195,7 +195,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Factura (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Detalle_factura (
-    detalle_factura_idDetalle DECIMAL(18,0) NOT NULL,
+    detalle_factura_idDetalle DECIMAL(18,0) IDENTITY(1,1) NOT NULL,
     detalle_factura_nroFactura BIGINT,
     detalle_factura_precio DECIMAL(18,2),
     detalle_factura_cantidad DECIMAL(18,0),
@@ -207,7 +207,9 @@ CREATE TABLE SILVER_CRIME_RELOADED.Detalle_pedido (
     detalle_pedido_idPedido DECIMAL(18,0) NOT NULL,
     detalle_pedido_cantidad BIGINT,
     detalle_pedido_precio_unit DECIMAL(18,2),
-    detalle_pedido_subtotal DECIMAL(18,2)
+    detalle_pedido_subtotal DECIMAL(18,2),
+    detalle_pedido_cliente_id BIGINT NOT NULL,
+    detalle_pedido_nro_sucursal BIGINT NOT NULL
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon (
@@ -305,18 +307,21 @@ CONSTRAINT FK_Cliente_Localidad FOREIGN KEY (cliente_direccion) REFERENCES SILVE
 ALTER TABLE SILVER_CRIME_RELOADED.Estado
 ADD CONSTRAINT PK_Estado PRIMARY KEY (estado_id);
 
+ALTER TABLE SILVER_CRIME_RELOADED.Sucursal
+ADD CONSTRAINT PK_Sucursal PRIMARY KEY (sucursal_nroSucursal),
+CONSTRAINT FK_Sucursal_Direccion FOREIGN KEY (sucursal_direccion) REFERENCES SILVER_CRIME_RELOADED.Direccion(direccion_id);
+
 ALTER TABLE SILVER_CRIME_RELOADED.Pedido
-ADD CONSTRAINT PK_Pedido PRIMARY KEY (pedido_numero),
-CONSTRAINT FK_Pedido_Cliente FOREIGN KEY (pedido_cliente_id) REFERENCES SILVER_CRIME_RELOADED.Cliente(cliente_id),
-CONSTRAINT FK_Pedido_Estado FOREIGN KEY (pedido_estado_id) REFERENCES SILVER_CRIME_RELOADED.Estado(estado_id);
+ADD CONSTRAINT FK_Pedido_Cliente FOREIGN KEY (pedido_cliente_id) REFERENCES SILVER_CRIME_RELOADED.Cliente(cliente_id),
+CONSTRAINT FK_Pedido_Estado FOREIGN KEY (pedido_estado_id) REFERENCES SILVER_CRIME_RELOADED.Estado(estado_id),
+CONSTRAINT FK_Pedido_Sucursal FOREIGN KEY (pedido_nro_Sucursal) REFERENCES SILVER_CRIME_RELOADED.Sucursal(sucursal_nroSucursal),
+CONSTRAINT PK_Pedido PRIMARY KEY (pedido_numero,pedido_cliente_id,pedido_nro_Sucursal);
+
 
 ALTER TABLE SILVER_CRIME_RELOADED.Proveedor
 ADD CONSTRAINT PK_Proveedor PRIMARY KEY (proveedor_cuit),
 CONSTRAINT FK_Proveedor_Direccion FOREIGN KEY (proveedor_direccion) REFERENCES SILVER_CRIME_RELOADED.Direccion(direccion_id);
 
-ALTER TABLE SILVER_CRIME_RELOADED.Sucursal
-ADD CONSTRAINT PK_Sucursal PRIMARY KEY (sucursal_nroSucursal),
-CONSTRAINT FK_Sucursal_Direccion FOREIGN KEY (sucursal_direccion) REFERENCES SILVER_CRIME_RELOADED.Direccion(direccion_id);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Compra
 ADD  CONSTRAINT PK_Compra PRIMARY KEY (compra_numero),
@@ -344,9 +349,10 @@ CONSTRAINT FK_Sillon_Modelo FOREIGN KEY (sillon_modelo_codigo) REFERENCES SILVER
 CONSTRAINT FK_Sillon_Medida FOREIGN KEY (sillon_medida_codigo) REFERENCES SILVER_CRIME_RELOADED.Sillon_medida(sillon_medida_codigo);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Detalle_pedido
-ADD CONSTRAINT PK_Detalle_pedido PRIMARY KEY (detalle_pedido_sillon_codigo, detalle_pedido_idPedido),
-CONSTRAINT FK_DetallePedido_Sillon FOREIGN KEY (detalle_pedido_sillon_codigo) REFERENCES SILVER_CRIME_RELOADED.Sillon(sillon_codigo),
-CONSTRAINT FK_DetallePedido_Pedido FOREIGN KEY (detalle_pedido_idPedido) REFERENCES SILVER_CRIME_RELOADED.Pedido(pedido_numero);
+ADD CONSTRAINT FK_DetallePedido_Sillon FOREIGN KEY (detalle_pedido_sillon_codigo) REFERENCES SILVER_CRIME_RELOADED.Sillon(sillon_codigo),
+CONSTRAINT FK_DetallePedido_Pedido FOREIGN KEY (detalle_pedido_idPedido, detalle_pedido_cliente_id, detalle_pedido_nro_sucursal) REFERENCES SILVER_CRIME_RELOADED.Pedido(pedido_numero, pedido_cliente_id, pedido_nro_Sucursal),
+CONSTRAINT PK_Detalle_pedido PRIMARY KEY (detalle_pedido_sillon_codigo, detalle_pedido_idPedido, detalle_pedido_cliente_id, detalle_pedido_nro_sucursal);
+
 
 ALTER TABLE SILVER_CRIME_RELOADED.Envio
 ADD CONSTRAINT PK_Envio PRIMARY KEY (envio_numero),
@@ -488,7 +494,34 @@ BEGIN
 END
 GO
 
-/*  COMPILA PERO DEJA LA TABLA VACIA, TODO
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_sucursales') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_sucursales
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_sucursales AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Sucursal (
+        sucursal_nroSucursal,
+        sucursal_direccion,
+        sucursal_telefono,
+        sucursal_mail
+    )
+    SELECT DISTINCT
+        m.Sucursal_NroSucursal,
+        d.direccion_id,
+        m.Sucursal_Telefono,
+        m.Sucursal_Mail
+    FROM gd_esquema.Maestra m
+    INNER JOIN SILVER_CRIME_RELOADED.Provincia p
+        ON p.provincia_nombre = m.Sucursal_Provincia
+    INNER JOIN SILVER_CRIME_RELOADED.Localidad l
+        ON l.localidad_nombre = m.Sucursal_Localidad
+        AND l.localidad_provincia_id = p.provincia_id
+    INNER JOIN SILVER_CRIME_RELOADED.Direccion d
+        ON d.direccion_nombre = m.Sucursal_Direccion
+        AND d.direccion_localidad_id = l.localidad_id
+    WHERE m.Sucursal_NroSucursal IS NOT NULL
+END
+GO
 
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_pedidos') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_pedidos
@@ -505,27 +538,167 @@ BEGIN
         pedido_cancelacion_fecha,
         pedido_cancelacion_motivo
     )
-    SELECT DISTINCT
+    SELECT 
         m.Pedido_Numero,
         c.cliente_id,
-        s.sucursal_nroSucursal,
-        e.estado_id,
-        m.Pedido_Fecha,
-        m.Pedido_Total,
-        m.Pedido_Cancelacion_Fecha,
-        m.Pedido_Cancelacion_Motivo
+        m.Sucursal_NroSucursal,
+        MIN(e.estado_id),
+        MIN(m.Pedido_Fecha),
+        MIN(m.Pedido_Total),
+        MIN(m.Pedido_Cancelacion_Fecha),
+        MIN(m.Pedido_Cancelacion_Motivo)
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Cliente c
+        ON c.cliente_dni = m.Cliente_DNI
+    JOIN SILVER_CRIME_RELOADED.Estado e
+        ON e.estado_descripcion = m.Pedido_Estado
+    WHERE m.Pedido_Numero IS NOT NULL
+      AND m.Cliente_DNI IS NOT NULL
+      AND m.Pedido_Estado IS NOT NULL
+      AND m.Sucursal_NroSucursal IS NOT NULL
+      AND NOT EXISTS (
+          SELECT 1 
+          FROM SILVER_CRIME_RELOADED.Pedido p
+          WHERE p.pedido_numero = m.Pedido_Numero
+            AND p.pedido_cliente_id = c.cliente_id
+            AND p.pedido_nro_sucursal = m.Sucursal_NroSucursal
+      )
+    GROUP BY 
+        m.Pedido_Numero,
+        c.cliente_id,
+        m.Sucursal_NroSucursal;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_proveedores') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_proveedores
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_proveedores AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Proveedor (
+        proveedor_cuit,
+        proveedor_razonSocial,
+        proveedor_direccion,
+        proveedor_telefono,
+        proveedor_mail
+    )
+    SELECT DISTINCT
+        m.Proveedor_CUIT,
+        m.Proveedor_RazonSocial,
+        d.direccion_id,
+        m.Proveedor_Telefono,
+        m.Proveedor_Mail
+    FROM gd_esquema.Maestra m
+    INNER JOIN SILVER_CRIME_RELOADED.Provincia p
+        ON p.provincia_nombre = m.Proveedor_Provincia
+    INNER JOIN SILVER_CRIME_RELOADED.Localidad l
+        ON l.localidad_nombre = m.Proveedor_Localidad
+        AND l.localidad_provincia_id = p.provincia_id
+    INNER JOIN SILVER_CRIME_RELOADED.Direccion d
+        ON d.direccion_nombre = m.Proveedor_Direccion
+        AND d.direccion_localidad_id = l.localidad_id
+    WHERE m.Proveedor_CUIT IS NOT NULL
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_compras') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_compras
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_compras AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Compra (
+        compra_numero,
+        compra_nroSucursal,
+        compra_cuitProveedor,
+        compra_fecha,
+        compra_total
+    )
+    SELECT DISTINCT
+        m.Compra_Numero,
+        m.Sucursal_NroSucursal,
+        m.Proveedor_CUIT,
+        m.Compra_Fecha,
+        m.Compra_Total
+    FROM gd_esquema.Maestra m
+    WHERE m.Compra_Numero IS NOT NULL
+      AND m.Sucursal_NroSucursal IS NOT NULL
+      AND m.Proveedor_CUIT IS NOT NULL;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_facturas') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_facturas
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_facturas AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Factura (
+        factura_numero,
+        factura_cliente_id,
+        factura_sucursal_nroSucursal,
+        factura_total,
+        factura_fecha
+    )
+    SELECT DISTINCT
+        m.Factura_Numero,
+        c.cliente_id,
+        m.Sucursal_NroSucursal,
+        m.Factura_Total,
+        m.Factura_Fecha
     FROM gd_esquema.Maestra m
     INNER JOIN SILVER_CRIME_RELOADED.Cliente c
         ON c.cliente_dni = m.Cliente_DNI
-    INNER JOIN SILVER_CRIME_RELOADED.Sucursal s
-        ON s.sucursal_nroSucursal = m.Sucursal_NroSucursal
-    INNER JOIN SILVER_CRIME_RELOADED.Estado e
-        ON e.estado_descripcion = m.Pedido_Estado
-    WHERE m.Pedido_Numero IS NOT NULL
+    WHERE m.Factura_Numero IS NOT NULL
+      AND m.Cliente_DNI IS NOT NULL
+      AND m.Sucursal_NroSucursal IS NOT NULL
 END
 GO
-*/
 
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_detalle_factura') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_factura
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_factura AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Detalle_factura (
+        detalle_factura_nroFactura,
+        detalle_factura_precio,
+        detalle_factura_cantidad,
+        detalle_factura_subtotal
+    )
+    SELECT DISTINCT
+        m.Factura_Numero,
+        m.Detalle_Factura_Precio,
+        m.Detalle_Factura_Cantidad,
+        m.Detalle_Factura_Subtotal
+    FROM gd_esquema.Maestra m
+    WHERE m.Factura_Numero IS NOT NULL
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_envio') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_envio
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_envio AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Envio (
+        envio_nroFactura,
+        envio_fecha_programada,
+        envio_fecha,
+        envio_importeTraslado,
+        envio_importeSubida,
+        envio_total
+    )
+    SELECT DISTINCT
+        m.Factura_Numero,
+        m.Envio_Fecha_Programada,
+        m.Envio_Fecha,
+        m.Envio_ImporteTraslado,
+        m.Envio_ImporteSubida,
+        m.Envio_Total
+    FROM gd_esquema.Maestra m
+    WHERE m.Factura_Numero IS NOT NULL
+      AND (m.Envio_Fecha_Programada IS NOT NULL OR m.Envio_Fecha IS NOT NULL OR m.Envio_ImporteTraslado IS NOT NULL OR m.Envio_ImporteSubida IS NOT NULL OR m.Envio_Total IS NOT NULL)
+END
+GO
 ----------------------------------------------
 --MIGRACION
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
@@ -533,4 +706,10 @@ EXEC SILVER_CRIME_RELOADED.migrar_localidades;
 EXEC SILVER_CRIME_RELOADED.migrar_direcciones;
 EXEC SILVER_CRIME_RELOADED.migrar_clientes;
 EXEC SILVER_CRIME_RELOADED.migrar_estados;
---EXEC SILVER_CRIME_RELOADED.migrar_pedidos; TODO
+EXEC SILVER_CRIME_RELOADED.migrar_sucursales;
+EXEC SILVER_CRIME_RELOADED.migrar_pedidos;
+EXEC SILVER_CRIME_RELOADED.migrar_proveedores;
+EXEC SILVER_CRIME_RELOADED.migrar_compras;
+EXEC SILVER_CRIME_RELOADED.migrar_facturas;
+EXEC SILVER_CRIME_RELOADED.migrar_detalle_factura;
+EXEC SILVER_CRIME_RELOADED.migrar_envio;
