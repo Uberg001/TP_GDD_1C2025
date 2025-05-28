@@ -159,7 +159,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Pedido (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Estado (
-    estado_id INT NOT NULL,
+    estado_id INT IDENTITY(1,1) NOT NULL,
     estado_descripcion NVARCHAR(255)
 );
 
@@ -386,31 +386,19 @@ IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_provincias') IS NOT NULL
 GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_provincias AS
 BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Provincia (provincia_nombre) VALUES
-        ('Buenos Aires'),
-        ('Capital Federal'),
-        ('Catamarca'),
-        ('Chaco'),
-        ('Chubut'),
-        ('Cordoba'),
-        ('Corrientes'),
-        ('Entre Rios'),
-        ('Formosa'),
-        ('Jujuy'),
-        ('La Pampa'),
-        ('La Rioja'),
-        ('Mendoza'),
-        ('Misiones'),
-        ('Neuquen'),
-        ('Rio Negro'),
-        ('Salta'),
-        ('San Juan'),
-        ('San Luis'),
-        ('Santa Cruz'),
-        ('Santa Fe'),
-        ('Santiago del Estero'),
-        ('Tierra del Fuego'),
-        ('Tucuman');
+    INSERT INTO SILVER_CRIME_RELOADED.Provincia (provincia_nombre)
+    SELECT DISTINCT P.provincia_nombre
+    FROM (
+        SELECT DISTINCT Sucursal_Provincia as provincia_nombre FROM gd_esquema.Maestra
+        WHERE Sucursal_Provincia IS NOT NULL
+        UNION
+        SELECT DISTINCT Cliente_Provincia as provincia_nombre FROM gd_esquema.Maestra
+        WHERE Cliente_Provincia IS NOT NULL
+        UNION
+        SELECT DISTINCT Proveedor_Provincia as provincia_nombre FROM gd_esquema.Maestra
+        WHERE Proveedor_Provincia IS NOT NULL
+    ) P
+    WHERE P.provincia_nombre IS NOT NULL;
 END
 GO
 
@@ -489,9 +477,60 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_estados') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_estados
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_estados AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Estado (estado_descripcion)
+    SELECT DISTINCT Pedido_Estado as estado_descripcion FROM gd_esquema.Maestra 
+    WHERE Pedido_Estado IS NOT NULL
+END
+GO
+
+/*  COMPILA PERO DEJA LA TABLA VACIA, TODO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_pedidos') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_pedidos
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_pedidos AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Pedido (
+        pedido_numero,
+        pedido_cliente_id,
+        pedido_nro_sucursal,
+        pedido_estado_id,
+        pedido_fecha,
+        pedido_total,
+        pedido_cancelacion_fecha,
+        pedido_cancelacion_motivo
+    )
+    SELECT DISTINCT
+        m.Pedido_Numero,
+        c.cliente_id,
+        s.sucursal_nroSucursal,
+        e.estado_id,
+        m.Pedido_Fecha,
+        m.Pedido_Total,
+        m.Pedido_Cancelacion_Fecha,
+        m.Pedido_Cancelacion_Motivo
+    FROM gd_esquema.Maestra m
+    INNER JOIN SILVER_CRIME_RELOADED.Cliente c
+        ON c.cliente_dni = m.Cliente_DNI
+    INNER JOIN SILVER_CRIME_RELOADED.Sucursal s
+        ON s.sucursal_nroSucursal = m.Sucursal_NroSucursal
+    INNER JOIN SILVER_CRIME_RELOADED.Estado e
+        ON e.estado_descripcion = m.Pedido_Estado
+    WHERE m.Pedido_Numero IS NOT NULL
+END
+GO
+*/
+
 ----------------------------------------------
 --MIGRACION
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
 EXEC SILVER_CRIME_RELOADED.migrar_localidades;
 EXEC SILVER_CRIME_RELOADED.migrar_direcciones;
 EXEC SILVER_CRIME_RELOADED.migrar_clientes;
+EXEC SILVER_CRIME_RELOADED.migrar_estados;
+--EXEC SILVER_CRIME_RELOADED.migrar_pedidos; TODO
