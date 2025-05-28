@@ -420,11 +420,15 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_localidades AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Localidad (localidad_nombre, localidad_provincia_id)
-    SELECT DISTINCT Sucursal_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Sucursal_Provincia) FROM gd_esquema.Maestra
-    UNION
-    SELECT DISTINCT Proveedor_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Proveedor_Provincia) FROM gd_esquema.Maestra
-    UNION
-    SELECT DISTINCT Cliente_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Cliente_Provincia) FROM gd_esquema.Maestra
+    SELECT DISTINCT L.localidad_nombre, P.provincia_id
+    FROM (
+        SELECT Sucursal_Localidad AS localidad_nombre, Sucursal_Provincia AS provincia_nombre FROM gd_esquema.Maestra
+        UNION
+        SELECT Proveedor_Localidad, Proveedor_Provincia FROM gd_esquema.Maestra
+        UNION
+        SELECT Cliente_Localidad, Cliente_Provincia FROM gd_esquema.Maestra
+    ) L
+    INNER JOIN SILVER_CRIME_RELOADED.Provincia P ON P.provincia_nombre = L.provincia_nombre;
 END
 GO
 
@@ -434,32 +438,21 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_direcciones AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Direccion (direccion_nombre, direccion_localidad_id)
-        SELECT DISTINCT Sucursal_Direccion, 
-            (SELECT localidad_id 
-             FROM SILVER_CRIME_RELOADED.Localidad 
-             WHERE localidad_nombre = Sucursal_Localidad 
-               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Sucursal_Provincia)
-            ) 
-        FROM gd_esquema.Maestra
-        UNION
-        SELECT DISTINCT Proveedor_Direccion, 
-            (SELECT localidad_id 
-             FROM SILVER_CRIME_RELOADED.Localidad 
-             WHERE localidad_nombre = Proveedor_Localidad 
-               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Proveedor_Provincia)
+        SELECT DISTINCT M.Direccion, L.localidad_id
+        FROM (
+            SELECT Sucursal_Direccion AS Direccion, Sucursal_Localidad AS Localidad, Sucursal_Provincia AS Provincia FROM gd_esquema.Maestra
+            UNION
+            SELECT Proveedor_Direccion, Proveedor_Localidad, Proveedor_Provincia FROM gd_esquema.Maestra
+            UNION
+            SELECT Cliente_Direccion, Cliente_Localidad, Cliente_Provincia FROM gd_esquema.Maestra
+        ) M
+        INNER JOIN SILVER_CRIME_RELOADED.Localidad L
+            ON L.localidad_nombre = M.Localidad
+            AND L.localidad_provincia_id = (
+                SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = M.Provincia
             )
-        FROM gd_esquema.Maestra
-        UNION
-        SELECT DISTINCT Cliente_Direccion, 
-            (SELECT localidad_id 
-             FROM SILVER_CRIME_RELOADED.Localidad 
-             WHERE localidad_nombre = Cliente_Localidad 
-               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Cliente_Provincia)
-            )
-        FROM gd_esquema.Maestra;
 END
 GO
-
 
 ----------------------------------------------
 --MIGRACION
