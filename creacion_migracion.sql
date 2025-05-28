@@ -120,24 +120,24 @@ GO
 -------------------------------------------------------------------------
 -- CREACION DE TABLAS
 CREATE TABLE SILVER_CRIME_RELOADED.Provincia (
-    provincia_id BIGINT NOT NULL,
+    provincia_id BIGINT IDENTITY(1,1) NOT NULL,
     provincia_nombre NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Localidad (
-    localidad_id BIGINT NOT NULL,
+    localidad_id BIGINT IDENTITY(1,1) NOT NULL,
     localidad_provincia_id BIGINT,
     localidad_nombre NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Direccion (
-    direccion_id BIGINT NOT NULL,
+    direccion_id BIGINT IDENTITY(1,1) NOT NULL,
     direccion_localidad_id BIGINT,
     direccion_nombre NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Cliente (
-    cliente_id BIGINT NOT NULL,
+    cliente_id BIGINT IDENTITY(1,1) NOT NULL,
     cliente_dni BIGINT,
     cliente_nombre NVARCHAR(255),
     cliente_apellido NVARCHAR(255),
@@ -203,7 +203,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Detalle_factura (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Detalle_pedido (
-    detalle_pedido_sillon_codigo BIGINT NOT NULL,
+    detalle_pedido_sillon_codigo BIGINT IDENTITY(1,1) NOT NULL,
     detalle_pedido_idPedido DECIMAL(18,0) NOT NULL,
     detalle_pedido_cantidad BIGINT,
     detalle_pedido_precio_unit DECIMAL(18,2),
@@ -211,20 +211,20 @@ CREATE TABLE SILVER_CRIME_RELOADED.Detalle_pedido (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon (
-    sillon_codigo BIGINT NOT NULL,
+    sillon_codigo BIGINT IDENTITY(1,1) NOT NULL,
     sillon_modelo_codigo BIGINT,
     sillon_medida_codigo BIGINT
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon_modelo (
-    sillon_modelo_codigo BIGINT NOT NULL,
+    sillon_modelo_codigo BIGINT IDENTITY(1,1) NOT NULL,
     sillon_modelo_descripcion NVARCHAR(255),
     sillon_modelo NVARCHAR(255),
     sillon_modelo_precio_base DECIMAL(18,2)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon_medida (
-    sillon_medida_codigo BIGINT NOT NULL,
+    sillon_medida_codigo BIGINT IDENTITY(1,1) NOT NULL,
     sillon_medida_alto DECIMAL(18,2),
     sillon_medida_ancho DECIMAL(18,2),
     sillon_medida_profundidad DECIMAL(18,2),
@@ -232,7 +232,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Sillon_medida (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Envio(
-    envio_numero DECIMAL(18,0) NOT NULL,
+    envio_numero DECIMAL(18,0) IDENTITY(1,1) NOT NULL,
     envio_nroFactura BIGINT,         
     envio_fecha_programada DATETIME2(6),
     envio_fecha DATETIME2(6),
@@ -242,7 +242,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Envio(
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Detalle_compra (
-    detalle_compra_compraID DECIMAL(18, 0) NOT NULL,
+    detalle_compra_compraID DECIMAL(18, 0) IDENTITY(1,1) NOT NULL,
     detalle_compra_materialID INT NOT NULL,
     detalle_compra_precio DECIMAL(18, 2),
     detalle_compra_cantidad DECIMAL(18, 0),
@@ -250,7 +250,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Detalle_compra (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material (
-    material_ID INT NOT NULL,
+    material_ID INT IDENTITY(1,1) NOT NULL,
     material_nombre NVARCHAR(256),
     material_descripcion NVARCHAR(255),
     material_tipo NVARCHAR(255),
@@ -258,26 +258,26 @@ CREATE TABLE SILVER_CRIME_RELOADED.Material (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Tipo_material (
-    tipo_ID INT NOT NULL
+    tipo_ID INT IDENTITY(1,1) NOT NULL
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_madera (
     tipo_ID INT,
-    madera_ID INT NOT NULL,
+    madera_ID INT IDENTITY(1,1) NOT NULL,
     material_madera_color NVARCHAR(255),
     material_madera_dureza NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_tela (
     tipo_ID INT,
-    tela_ID INT NOT NULL,
+    tela_ID INT IDENTITY(1,1) NOT NULL,
     material_tela_textura NVARCHAR(255),
     material_tela_color NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_relleno (
     tipo_ID INT,
-    relleno_ID INT NOT NULL,
+    relleno_ID INT IDENTITY(1,1) NOT NULL,
     material_relleno_densidad DECIMAL(18, 2)
 );
 
@@ -386,35 +386,65 @@ IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_provincias') IS NOT NULL
 GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_provincias AS
 BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Provincia (provincia_id, provincia_nombre) VALUES
-        (1, 'Buenos Aires'),
-        (2, 'Capital Federal'),
-        (3, 'Catamarca'),
-        (4, 'Chaco'),
-        (5, 'Chubut'),
-        (6, 'Cordoba'),
-        (7, 'Corrientes'),
-        (8, 'Entre Rios'),
-        (9, 'Formosa'),
-        (10, 'Jujuy'),
-        (11, 'La Pampa'),
-        (12, 'La Rioja'),
-        (13, 'Mendoza'),
-        (14, 'Misiones'),
-        (15, 'Neuquen'),
-        (16, 'Rio Negro'),
-        (17, 'Salta'),
-        (18, 'San Juan'),
-        (19, 'San Luis'),
-        (20, 'Santa Cruz'),
-        (21, 'Santa Fe'),
-        (22, 'Santiago del Estero'),
-        (23, 'Tierra del Fuego'),
-        (24, 'Tucuman');
+    INSERT INTO SILVER_CRIME_RELOADED.Provincia (provincia_nombre) VALUES
+        ('Buenos Aires'),
+        ('Capital Federal'),
+        ('Catamarca'),
+        ('Chaco'),
+        ('Chubut'),
+        ('Cordoba'),
+        ('Corrientes'),
+        ('Entre Rios'),
+        ('Formosa'),
+        ('Jujuy'),
+        ('La Pampa'),
+        ('La Rioja'),
+        ('Mendoza'),
+        ('Misiones'),
+        ('Neuquen'),
+        ('Rio Negro'),
+        ('Salta'),
+        ('San Juan'),
+        ('San Luis'),
+        ('Santa Cruz'),
+        ('Santa Fe'),
+        ('Santiago del Estero'),
+        ('Tierra del Fuego'),
+        ('Tucuman');
 END
+GO
 
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_localidades') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_localidades
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_localidades AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Localidad (localidad_nombre, localidad_provincia_id)
+    SELECT DISTINCT Sucursal_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Sucursal_Provincia) FROM gd_esquema.Maestra
+    UNION
+    SELECT DISTINCT Proveedor_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Proveedor_Provincia) FROM gd_esquema.Maestra
+    UNION
+    SELECT DISTINCT Cliente_Localidad, (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Cliente_Provincia) FROM gd_esquema.Maestra
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_direcciones') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_direcciones
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_direcciones AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Direccion (direccion_nombre, direccion_localidad_id)
+    SELECT DISTINCT Sucursal_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Sucursal_Localidad) FROM gd_esquema.Maestra
+    UNION
+    SELECT DISTINCT Proveedor_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Proveedor_Localidad) FROM gd_esquema.Maestra
+    UNION
+    SELECT DISTINCT Cliente_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Cliente_Localidad) FROM gd_esquema.Maestra;
+END
+GO
 
 
 ----------------------------------------------
 --MIGRACION
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
+EXEC SILVER_CRIME_RELOADED.migrar_localidades;
+EXEC SILVER_CRIME_RELOADED.migrar_direcciones;
