@@ -454,8 +454,44 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_clientes') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_clientes
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_clientes AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Cliente (
+        cliente_dni,
+        cliente_nombre,
+        cliente_apellido,
+        cliente_fechaNacimiento,
+        cliente_mail,
+        cliente_direccion,
+        cliente_telefono
+    )
+    SELECT DISTINCT
+        m.Cliente_DNI,
+        m.Cliente_Nombre,
+        m.Cliente_Apellido,
+        m.Cliente_FechaNacimiento,
+        m.Cliente_Mail,
+        d.direccion_id,
+        m.Cliente_Telefono
+    FROM gd_esquema.Maestra m
+    INNER JOIN SILVER_CRIME_RELOADED.Provincia p
+        ON p.provincia_nombre = m.Cliente_Provincia
+    INNER JOIN SILVER_CRIME_RELOADED.Localidad l
+        ON l.localidad_nombre = m.Cliente_Localidad
+        AND l.localidad_provincia_id = p.provincia_id
+    INNER JOIN SILVER_CRIME_RELOADED.Direccion d
+        ON d.direccion_nombre = m.Cliente_Direccion
+        AND d.direccion_localidad_id = l.localidad_id
+    WHERE m.Cliente_DNI IS NOT NULL
+END
+GO
+
 ----------------------------------------------
 --MIGRACION
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
 EXEC SILVER_CRIME_RELOADED.migrar_localidades;
 EXEC SILVER_CRIME_RELOADED.migrar_direcciones;
+EXEC SILVER_CRIME_RELOADED.migrar_clientes;
