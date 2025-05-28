@@ -434,11 +434,29 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_direcciones AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Direccion (direccion_nombre, direccion_localidad_id)
-    SELECT DISTINCT Sucursal_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Sucursal_Localidad) FROM gd_esquema.Maestra
-    UNION
-    SELECT DISTINCT Proveedor_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Proveedor_Localidad) FROM gd_esquema.Maestra
-    UNION
-    SELECT DISTINCT Cliente_Direccion, (SELECT localidad_id FROM SILVER_CRIME_RELOADED.Localidad WHERE localidad_nombre = Cliente_Localidad) FROM gd_esquema.Maestra;
+        SELECT DISTINCT Sucursal_Direccion, 
+            (SELECT localidad_id 
+             FROM SILVER_CRIME_RELOADED.Localidad 
+             WHERE localidad_nombre = Sucursal_Localidad 
+               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Sucursal_Provincia)
+            ) 
+        FROM gd_esquema.Maestra
+        UNION
+        SELECT DISTINCT Proveedor_Direccion, 
+            (SELECT localidad_id 
+             FROM SILVER_CRIME_RELOADED.Localidad 
+             WHERE localidad_nombre = Proveedor_Localidad 
+               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Proveedor_Provincia)
+            )
+        FROM gd_esquema.Maestra
+        UNION
+        SELECT DISTINCT Cliente_Direccion, 
+            (SELECT localidad_id 
+             FROM SILVER_CRIME_RELOADED.Localidad 
+             WHERE localidad_nombre = Cliente_Localidad 
+               AND localidad_provincia_id = (SELECT provincia_id FROM SILVER_CRIME_RELOADED.Provincia WHERE provincia_nombre = Cliente_Provincia)
+            )
+        FROM gd_esquema.Maestra;
 END
 GO
 
