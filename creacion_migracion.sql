@@ -219,7 +219,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Sillon (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon_modelo (
-    sillon_modelo_codigo BIGINT IDENTITY(1,1) NOT NULL,
+    sillon_modelo_codigo BIGINT NOT NULL,
     sillon_modelo_descripcion NVARCHAR(255),
     sillon_modelo NVARCHAR(255),
     sillon_modelo_precio_base DECIMAL(18,2)
@@ -699,6 +699,86 @@ BEGIN
       AND (m.Envio_Fecha_Programada IS NOT NULL OR m.Envio_Fecha IS NOT NULL OR m.Envio_ImporteTraslado IS NOT NULL OR m.Envio_ImporteSubida IS NOT NULL OR m.Envio_Total IS NOT NULL)
 END
 GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_sillon_modelo') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon_modelo
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon_modelo AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Sillon_modelo (
+        sillon_modelo_codigo,
+        sillon_modelo_descripcion,
+        sillon_modelo,
+        sillon_modelo_precio_base
+    )
+    SELECT 
+        m.Sillon_Modelo_Codigo,
+        m.Sillon_Modelo_Descripcion,
+        m.Sillon_Modelo,
+        m.Sillon_Modelo_Precio
+    FROM gd_esquema.Maestra m
+    WHERE m.Sillon_Modelo_Codigo IS NOT NULL -- hay nulls en la tabla original...
+    group by 
+        m.Sillon_Modelo_Codigo,
+        m.Sillon_Modelo_Descripcion,
+        m.Sillon_Modelo,
+        m.Sillon_Modelo_Precio
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_sillon_medida') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon_medida
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon_medida AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Sillon_medida (
+        sillon_medida_alto,
+        sillon_medida_ancho,
+        sillon_medida_profundidad,
+        sillon_medida_precio
+    )
+    SELECT 
+        m.Sillon_Medida_Alto,
+        m.Sillon_Medida_Ancho,
+        m.Sillon_Medida_Profundidad,
+        m.Sillon_Medida_Precio
+    FROM gd_esquema.Maestra m
+    WHERE m.Sillon_Medida_Alto IS NOT NULL --nulls en la tabla original....
+      AND m.Sillon_Medida_Ancho IS NOT NULL
+      AND m.Sillon_Medida_Profundidad IS NOT NULL
+      AND m.Sillon_Medida_Precio IS NOT NULL
+    group by 
+        m.Sillon_Medida_Alto,
+        m.Sillon_Medida_Ancho,
+        m.Sillon_Medida_Profundidad,
+        m.Sillon_Medida_Precio
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_sillon') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Sillon (
+        sillon_modelo_codigo,
+        sillon_medida_codigo
+    )
+    SELECT 
+        m.Sillon_Modelo_Codigo,
+        smd.Sillon_Medida_Codigo
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Sillon_medida smd ON smd.sillon_medida_alto = m.Sillon_Medida_Alto
+        AND smd.sillon_medida_ancho = m.Sillon_Medida_Ancho
+        AND smd.sillon_medida_profundidad = m.Sillon_Medida_Profundidad
+    WHERE m.Sillon_Modelo_Codigo IS NOT NULL
+      AND smd.Sillon_Medida_Codigo IS NOT NULL
+    GROUP BY 
+        m.Sillon_Modelo_Codigo,
+        smd.Sillon_Medida_Codigo;
+END
+GO
+
 ----------------------------------------------
 --MIGRACION
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
@@ -713,3 +793,6 @@ EXEC SILVER_CRIME_RELOADED.migrar_compras;
 EXEC SILVER_CRIME_RELOADED.migrar_facturas;
 EXEC SILVER_CRIME_RELOADED.migrar_detalle_factura;
 EXEC SILVER_CRIME_RELOADED.migrar_envio;
+EXEC SILVER_CRIME_RELOADED.migrar_sillon_modelo;
+EXEC SILVER_CRIME_RELOADED.migrar_sillon_medida;
+EXEC SILVER_CRIME_RELOADED.migrar_sillon;
