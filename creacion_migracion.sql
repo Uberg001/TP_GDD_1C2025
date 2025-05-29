@@ -1,4 +1,3 @@
-
 --CREACION DE ESQUEMA SILVER_CRIME_RELOADED
 USE GD1C2025
 GO
@@ -202,18 +201,8 @@ CREATE TABLE SILVER_CRIME_RELOADED.Detalle_factura (
     detalle_factura_subtotal DECIMAL(18,2)
 );
 
-CREATE TABLE SILVER_CRIME_RELOADED.Detalle_pedido (
-    detalle_pedido_sillon_codigo BIGINT IDENTITY(1,1) NOT NULL,
-    detalle_pedido_idPedido DECIMAL(18,0) NOT NULL,
-    detalle_pedido_cantidad BIGINT,
-    detalle_pedido_precio_unit DECIMAL(18,2),
-    detalle_pedido_subtotal DECIMAL(18,2),
-    detalle_pedido_cliente_id BIGINT NOT NULL,
-    detalle_pedido_nro_sucursal BIGINT NOT NULL
-);
-
 CREATE TABLE SILVER_CRIME_RELOADED.Sillon (
-    sillon_codigo BIGINT IDENTITY(1,1) NOT NULL,
+    sillon_codigo BIGINT NOT NULL,
     sillon_modelo_codigo BIGINT,
     sillon_medida_codigo BIGINT
 );
@@ -233,6 +222,16 @@ CREATE TABLE SILVER_CRIME_RELOADED.Sillon_medida (
     sillon_medida_precio DECIMAL(18,2)
 );
 
+CREATE TABLE SILVER_CRIME_RELOADED.Detalle_pedido (
+    detalle_pedido_sillon_codigo BIGINT NOT NULL,
+    detalle_pedido_idPedido DECIMAL(18,0) NOT NULL,
+    detalle_pedido_cantidad BIGINT,
+    detalle_pedido_precio_unit DECIMAL(18,2),
+    detalle_pedido_subtotal DECIMAL(18,2),
+    detalle_pedido_cliente_id BIGINT NOT NULL,
+    detalle_pedido_nro_sucursal BIGINT NOT NULL
+);
+
 CREATE TABLE SILVER_CRIME_RELOADED.Envio(
     envio_numero DECIMAL(18,0) IDENTITY(1,1) NOT NULL,
     envio_nroFactura BIGINT,         
@@ -244,7 +243,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Envio(
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Detalle_compra (
-    detalle_compra_compraID DECIMAL(18, 0) IDENTITY(1,1) NOT NULL,
+    detalle_compra_compraID DECIMAL(18, 0)  NOT NULL,
     detalle_compra_materialID INT NOT NULL,
     detalle_compra_precio DECIMAL(18, 2),
     detalle_compra_cantidad DECIMAL(18, 0),
@@ -255,36 +254,35 @@ CREATE TABLE SILVER_CRIME_RELOADED.Material (
     material_ID INT IDENTITY(1,1) NOT NULL,
     material_nombre NVARCHAR(256),
     material_descripcion NVARCHAR(255),
-    material_tipo NVARCHAR(255),
+    material_tipo_id INT,
     material_precio DECIMAL(18, 2)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Tipo_material (
-    tipo_ID INT IDENTITY(1,1) NOT NULL
+    tipo_ID INT IDENTITY(1,1) NOT NULL,
+    material_tipo NVARCHAR(255) 
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_madera (
-    tipo_ID INT,
-    madera_ID INT IDENTITY(1,1) NOT NULL,
+    madera_ID INT NOT NULL,
     material_madera_color NVARCHAR(255),
     material_madera_dureza NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_tela (
-    tipo_ID INT,
-    tela_ID INT IDENTITY(1,1) NOT NULL,
+    tela_ID INT NOT NULL,
     material_tela_textura NVARCHAR(255),
     material_tela_color NVARCHAR(255)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_relleno (
-    tipo_ID INT,
-    relleno_ID INT IDENTITY(1,1) NOT NULL,
+    relleno_ID INT NOT NULL,
     material_relleno_densidad DECIMAL(18, 2)
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_sillon (
     material_ID INT NOT NULL,
+    material_sillon_tipo NVARCHAR(255),
     sillon_ID BIGINT NOT NULL
 );
 ------------------------------------------------------------------------
@@ -353,28 +351,28 @@ ADD CONSTRAINT FK_DetallePedido_Sillon FOREIGN KEY (detalle_pedido_sillon_codigo
 CONSTRAINT FK_DetallePedido_Pedido FOREIGN KEY (detalle_pedido_idPedido, detalle_pedido_cliente_id, detalle_pedido_nro_sucursal) REFERENCES SILVER_CRIME_RELOADED.Pedido(pedido_numero, pedido_cliente_id, pedido_nro_Sucursal),
 CONSTRAINT PK_Detalle_pedido PRIMARY KEY (detalle_pedido_sillon_codigo, detalle_pedido_idPedido, detalle_pedido_cliente_id, detalle_pedido_nro_sucursal);
 
-
 ALTER TABLE SILVER_CRIME_RELOADED.Envio
 ADD CONSTRAINT PK_Envio PRIMARY KEY (envio_numero),
 CONSTRAINT FK_Envio_Factura FOREIGN KEY (envio_nroFactura) REFERENCES SILVER_CRIME_RELOADED.Factura(factura_numero);
 
-ALTER TABLE SILVER_CRIME_RELOADED.Material
-ADD CONSTRAINT PK_Material PRIMARY KEY (material_ID);
-
 ALTER TABLE SILVER_CRIME_RELOADED.Tipo_material
 ADD CONSTRAINT PK_Tipo_material PRIMARY KEY (tipo_ID);
 
+ALTER TABLE SILVER_CRIME_RELOADED.Material
+ADD CONSTRAINT PK_Material PRIMARY KEY (material_ID),
+CONSTRAINT FK_material_tipo FOREIGN KEY (material_tipo_id) REFERENCES SILVER_CRIME_RELOADED.Tipo_material(tipo_ID);
+
 ALTER TABLE SILVER_CRIME_RELOADED.Material_madera
-ADD CONSTRAINT PK_Material_madera PRIMARY KEY (madera_ID),
-CONSTRAINT FK_Material_madera_tipo FOREIGN KEY (tipo_ID) REFERENCES SILVER_CRIME_RELOADED.Tipo_material(tipo_ID);
+ADD CONSTRAINT FK_Material_madera_tipo FOREIGN KEY (madera_ID) REFERENCES SILVER_CRIME_RELOADED.Material(material_ID),
+CONSTRAINT PK_Material_madera PRIMARY KEY (madera_ID);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Material_tela
-ADD CONSTRAINT PK_Material_tela PRIMARY KEY (tela_ID),
-CONSTRAINT FK_Material_tela_tipo FOREIGN KEY (tipo_ID) REFERENCES SILVER_CRIME_RELOADED.Tipo_material(tipo_ID);
+ADD CONSTRAINT FK_Material_tela_tipo FOREIGN KEY (tela_ID) REFERENCES SILVER_CRIME_RELOADED.Material(material_ID),
+CONSTRAINT PK_Material_tela PRIMARY KEY (tela_ID);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Material_relleno
-ADD CONSTRAINT PK_Material_relleno PRIMARY KEY (relleno_ID),
-CONSTRAINT FK_Material_relleno_tipo FOREIGN KEY (tipo_ID) REFERENCES SILVER_CRIME_RELOADED.Tipo_material(tipo_ID);
+ADD CONSTRAINT FK_Material_relleno_tipo FOREIGN KEY (relleno_ID) REFERENCES SILVER_CRIME_RELOADED.Material(material_ID),
+CONSTRAINT PK_Material_relleno PRIMARY KEY (relleno_ID);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Material_sillon
 ADD CONSTRAINT FK_Material_sillon FOREIGN KEY (sillon_ID) REFERENCES SILVER_CRIME_RELOADED.Sillon(sillon_codigo),
@@ -713,9 +711,9 @@ BEGIN
     )
     SELECT 
         m.Sillon_Modelo_Codigo,
-        m.Sillon_Modelo_Descripcion,
-        m.Sillon_Modelo,
-        m.Sillon_Modelo_Precio
+        MIN(m.Sillon_Modelo_Descripcion),
+        MIN(m.Sillon_Modelo),
+        MIN(m.Sillon_Modelo_Precio)
     FROM gd_esquema.Maestra m
     WHERE m.Sillon_Modelo_Codigo IS NOT NULL -- hay nulls en la tabla original...
     group by 
@@ -761,10 +759,12 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_sillon AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Sillon (
+        sillon_codigo,
         sillon_modelo_codigo,
         sillon_medida_codigo
     )
     SELECT 
+        m.Sillon_Codigo,
         m.Sillon_Modelo_Codigo,
         smd.Sillon_Medida_Codigo
     FROM gd_esquema.Maestra m
@@ -774,13 +774,209 @@ BEGIN
     WHERE m.Sillon_Modelo_Codigo IS NOT NULL
       AND smd.Sillon_Medida_Codigo IS NOT NULL
     GROUP BY 
+        m.Sillon_Codigo,
         m.Sillon_Modelo_Codigo,
         smd.Sillon_Medida_Codigo;
 END
 GO
 
-----------------------------------------------
---MIGRACION
+--migrar detalle_pedido
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_detalle_pedido') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_pedido
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_pedido AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Detalle_pedido (
+        detalle_pedido_sillon_codigo,
+        detalle_pedido_idPedido,
+        detalle_pedido_cantidad,
+        detalle_pedido_precio_unit,
+        detalle_pedido_subtotal,
+        detalle_pedido_cliente_id,
+        detalle_pedido_nro_sucursal
+    )
+    SELECT 
+        m.Sillon_Codigo,
+        m.Pedido_Numero,
+        m.Detalle_Pedido_Cantidad,
+        m.Detalle_Pedido_Precio,
+        m.Detalle_Pedido_Subtotal,
+        c.cliente_id,
+        m.Sucursal_NroSucursal
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Cliente c ON c.cliente_dni = m.Cliente_DNI
+    JOIN SILVER_CRIME_RELOADED.Sillon s ON s.sillon_codigo = m.Sillon_Codigo
+    WHERE m.Sillon_Codigo IS NOT NULL
+      AND m.Pedido_Numero IS NOT NULL
+      AND c.cliente_id IS NOT NULL
+      AND m.Sucursal_NroSucursal IS NOT NULL
+    GROUP BY 
+        m.Sillon_Codigo,
+        m.Pedido_Numero,
+        m.Detalle_Pedido_Cantidad,
+        m.Detalle_Pedido_Precio,
+        m.Detalle_Pedido_Subtotal,
+        c.cliente_id,
+        m.Sucursal_NroSucursal;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_sillon') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material_Sillon (
+        material_ID,
+        sillon_ID,
+        material_sillon_tipo
+    )
+    SELECT 
+        mat.material_id,
+        sil.sillon_codigo,
+        mat.material_tipo_id
+        
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Material mat 
+        ON mat.material_nombre = m.Material_Nombre
+        
+    JOIN SILVER_CRIME_RELOADED.Sillon sil 
+        ON sil.sillon_codigo = m.Sillon_Modelo_Codigo
+    JOIN SILVER_CRIME_RELOADED.Sillon_Medida smd 
+        ON smd.sillon_medida_alto = m.Sillon_Medida_Alto
+           AND smd.sillon_medida_ancho = m.Sillon_Medida_Ancho
+           AND smd.sillon_medida_profundidad = m.Sillon_Medida_Profundidad
+        AND sil.sillon_medida_codigo = smd.sillon_medida_codigo
+    WHERE m.Material_Nombre IS NOT NULL
+      AND m.Sillon_Modelo_Codigo IS NOT NULL
+      AND m.Sillon_Medida_Alto IS NOT NULL
+      AND m.Sillon_Medida_Ancho IS NOT NULL
+      AND m.Sillon_Medida_Profundidad IS NOT NULL
+    GROUP BY 
+        mat.material_id,
+        sil.sillon_codigo;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_tipo_material') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_tipo_material
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_tipo_material AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Tipo_material (
+        material_tipo
+    )
+    SELECT DISTINCT
+        m.Material_Tipo
+    FROM gd_esquema.Maestra m
+    WHERE m.Material_Tipo IS NOT NULL
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material (
+        material_nombre,
+        material_descripcion,
+        material_tipo_id,
+        material_precio
+    )
+    SELECT DISTINCT
+        m.Material_Nombre,
+        m.Material_Descripcion,
+        tm.tipo_ID,
+        m.Material_Precio
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Tipo_material tm 
+        ON tm.material_tipo = m.Material_Tipo
+    WHERE m.Material_Nombre IS NOT NULL
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_detalle_compra') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_compra
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_compra AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Detalle_compra (
+        detalle_compra_compraID,
+        detalle_compra_materialID,
+        detalle_compra_precio,
+        detalle_compra_cantidad,
+        detalle_compra_subtotal
+    )
+    SELECT 
+        m.Compra_Numero,
+        mat.material_id,
+        m.Detalle_Compra_Precio,
+        m.Detalle_Compra_Cantidad,
+        m.Detalle_Compra_Subtotal
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Material mat ON mat.material_nombre = m.Material_Nombre
+    WHERE m.Compra_Numero IS NOT NULL
+      AND mat.material_id IS NOT NULL;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_madera') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_madera
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_madera AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material_madera (
+        madera_ID,
+        material_madera_color,
+        material_madera_dureza
+    )
+    SELECT
+        IF mt.material_tipo=1 THEN
+            mt.material_id,
+            m.material_madera_color,
+            m.material_madera_dureza
+    FROM gd_esquema.Maestra m 
+    JOIN SILVER_CRIME_RELOADED mt on mt.material_id=
+        
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_tela') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_tela
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_tela AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material_tela (
+        tela_ID,
+        material_tela_textura,
+        material_tela_color
+    )
+    SELECT  
+       -- IF mt.material_tipo = 2 THEN
+            --mt.material_id,
+            m.material_tela_textura,
+            m.material_tela_color
+    FROM gd_esquema.Maestra m
+    WHERE mt.material_tipo = 2
+      AND mt.material_id IS NOT NULL;
+END
+GO
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_relleno') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_relleno
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_relleno AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material_relleno (
+        relleno_ID,
+        material_relleno_densidad
+    )
+    SELECT
+        
+END
+GO
+----------------------------------
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
 EXEC SILVER_CRIME_RELOADED.migrar_localidades;
 EXEC SILVER_CRIME_RELOADED.migrar_direcciones;
@@ -796,3 +992,12 @@ EXEC SILVER_CRIME_RELOADED.migrar_envio;
 EXEC SILVER_CRIME_RELOADED.migrar_sillon_modelo;
 EXEC SILVER_CRIME_RELOADED.migrar_sillon_medida;
 EXEC SILVER_CRIME_RELOADED.migrar_sillon;
+EXEC SILVER_CRIME_RELOADED.migrar_detalle_pedido;
+EXEC SILVER_CRIME_RELOADED.migrar_tipo_material;
+EXEC SILVER_CRIME_RELOADED.migrar_material;
+EXEC SILVER_CRIME_RELOADED.migrar_detalle_compra;
+EXEC SILVER_CRIME_RELOADED.migrar_material_sillon;
+
+EXEC SILVER_CRIME_RELOADED.migrar_material_madera;
+EXEC SILVER_CRIME_RELOADED.migrar_material_tela;
+EXEC SILVER_CRIME_RELOADED.migrar_material_relleno;
