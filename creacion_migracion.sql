@@ -281,8 +281,8 @@ CREATE TABLE SILVER_CRIME_RELOADED.Material_relleno (
 );
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_sillon (
-    material_ID INT NOT NULL,
-    material_sillon_tipo NVARCHAR(255),
+    sillon_material_ID INT NOT NULL,
+--    material_sillon_tipo INT NOT NULL,
     sillon_ID BIGINT NOT NULL
 );
 ------------------------------------------------------------------------
@@ -376,8 +376,8 @@ CONSTRAINT PK_Material_relleno PRIMARY KEY (relleno_ID);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Material_sillon
 ADD CONSTRAINT FK_Material_sillon FOREIGN KEY (sillon_ID) REFERENCES SILVER_CRIME_RELOADED.Sillon(sillon_codigo),
-CONSTRAINT FK_Material_sillon_material FOREIGN KEY (material_ID) REFERENCES SILVER_CRIME_RELOADED.Material(material_ID),
-CONSTRAINT PK_material_sillon PRIMARY KEY (sillon_ID,material_ID);
+CONSTRAINT FK_Material_sillon_material FOREIGN KEY (sillon_material_ID) REFERENCES SILVER_CRIME_RELOADED.Material(material_ID),
+CONSTRAINT PK_material_sillon PRIMARY KEY (sillon_ID,sillon_material_ID);
 
 ALTER TABLE SILVER_CRIME_RELOADED.Detalle_compra
 ADD CONSTRAINT FK_detalle_compra FOREIGN KEY (detalle_compra_compraID) REFERENCES SILVER_CRIME_RELOADED.Compra(compra_numero),
@@ -933,36 +933,18 @@ IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_sillon') IS NOT NULL
 GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon AS
 BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Material_Sillon (
-        material_ID,
-        sillon_ID,
-        material_sillon_tipo
+    INSERT INTO SILVER_CRIME_RELOADED.Material_sillon (
+        sillon_material_ID,
+        sillon_ID
     )
-    SELECT 
-        mat.material_id,
-        sil.sillon_codigo,
-        mat.material_tipo_id
-        
-    FROM gd_esquema.Maestra m
-    JOIN SILVER_CRIME_RELOADED.Material mat 
-        ON mat.material_nombre = m.Material_Nombre
-        
-    JOIN SILVER_CRIME_RELOADED.Sillon sil 
-        ON sil.sillon_codigo = m.Sillon_Modelo_Codigo
-    JOIN SILVER_CRIME_RELOADED.Sillon_Medida smd 
-        ON smd.sillon_medida_alto = m.Sillon_Medida_Alto
-           AND smd.sillon_medida_ancho = m.Sillon_Medida_Ancho
-           AND smd.sillon_medida_profundidad = m.Sillon_Medida_Profundidad
-        AND sil.sillon_medida_codigo = smd.sillon_medida_codigo
-    WHERE m.Material_Nombre IS NOT NULL
-      AND m.Sillon_Modelo_Codigo IS NOT NULL
-      AND m.Sillon_Medida_Alto IS NOT NULL
-      AND m.Sillon_Medida_Ancho IS NOT NULL
-      AND m.Sillon_Medida_Profundidad IS NOT NULL
-    GROUP BY 
-        mat.material_id,
-        sil.sillon_codigo,
-        mat.material_tipo_id;
+    SELECT DISTINCT
+        m.material_id,
+        s.sillon_codigo
+    FROM gd_esquema.Maestra maestra
+    JOIN SILVER_CRIME_RELOADED.Sillon s ON s.sillon_codigo = maestra.Sillon_Codigo
+    JOIN SILVER_CRIME_RELOADED.Material m ON m.material_nombre = maestra.Material_Nombre
+    WHERE maestra.Sillon_Codigo IS NOT NULL
+      AND maestra.Material_Nombre IS NOT NULL;
 END
 GO
 
