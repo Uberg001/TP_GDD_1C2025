@@ -842,22 +842,89 @@ IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material
 GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material AS
-BEGIN
+BEGIN    
+    -- Crear tabla temporal con columnas extra de la tabla maestra
+    IF OBJECT_ID('tempdb..#tmpMaterial') IS NOT NULL DROP TABLE #tmpMaterial;
+
+    SELECT DISTINCT
+        IDENTITY(INT, 1, 1) AS material_id,
+        m.Material_Nombre AS material_nombre,
+        m.Material_Descripcion AS material_descripcion,
+        tm.tipo_ID AS material_tipo_id,
+        m.Material_Precio AS material_precio,
+        m.Madera_Color,
+        m.Madera_Dureza,
+        m.Tela_Color,
+        m.Tela_Textura,
+        m.Relleno_Densidad,
+        tm.material_tipo
+        INTO #tmpMaterial
+        FROM gd_esquema.Maestra m
+        JOIN SILVER_CRIME_RELOADED.Tipo_material tm 
+        ON tm.material_tipo = m.Material_Tipo
+        WHERE m.Material_Nombre IS NOT NULL;
+
+    -- Insertar en tabla Material
     INSERT INTO SILVER_CRIME_RELOADED.Material (
         material_nombre,
         material_descripcion,
         material_tipo_id,
         material_precio
     )
-    SELECT DISTINCT
-        m.Material_Nombre,
-        m.Material_Descripcion,
-        tm.tipo_ID,
-        m.Material_Precio
-    FROM gd_esquema.Maestra m
-    JOIN SILVER_CRIME_RELOADED.Tipo_material tm 
-        ON tm.material_tipo = m.Material_Tipo
-    WHERE m.Material_Nombre IS NOT NULL
+    SELECT
+        material_nombre,
+        material_descripcion,
+        material_tipo_id,
+        material_precio
+    FROM #tmpMaterial;
+
+    -- Insertar en Material_madera
+    INSERT INTO SILVER_CRIME_RELOADED.Material_madera (
+        madera_ID,
+        material_madera_color,
+        material_madera_dureza
+    )
+    SELECT 
+        m.material_ID,
+        t.Madera_Color,
+        t.Madera_Dureza
+    FROM SILVER_CRIME_RELOADED.Material m
+    JOIN #tmpMaterial t ON t.material_id = m.material_id
+    JOIN SILVER_CRIME_RELOADED.Tipo_material tm ON tm.tipo_ID = m.material_tipo_id
+    WHERE tm.material_tipo = 'Madera'
+      AND t.Madera_Color IS NOT NULL
+      AND t.Madera_Dureza IS NOT NULL;
+
+    -- Insertar en Material_tela
+    INSERT INTO SILVER_CRIME_RELOADED.Material_tela (
+        tela_ID,
+        material_tela_color,
+        material_tela_textura
+    )
+    SELECT 
+        m.material_ID,
+        t.Tela_Color,
+        t.Tela_Textura
+    FROM SILVER_CRIME_RELOADED.Material m
+    JOIN #tmpMaterial t ON t.material_id = m.material_id
+    JOIN SILVER_CRIME_RELOADED.Tipo_material tm ON tm.tipo_ID = m.material_tipo_id
+    WHERE tm.material_tipo = 'Tela'
+      AND t.Tela_Color IS NOT NULL
+      AND t.Tela_Textura IS NOT NULL;
+
+    -- Insertar en Material_relleno
+    INSERT INTO SILVER_CRIME_RELOADED.Material_relleno (
+        relleno_ID,
+        material_relleno_densidad
+    )
+    SELECT 
+        m.material_ID,
+        t.Relleno_Densidad
+    FROM SILVER_CRIME_RELOADED.Material m
+    JOIN #tmpMaterial t ON t.material_id = m.material_id
+    JOIN SILVER_CRIME_RELOADED.Tipo_material tm ON tm.tipo_ID = m.material_tipo_id
+    WHERE tm.material_tipo = 'Relleno'
+      AND t.Relleno_Densidad IS NOT NULL;
 END
 GO
 
@@ -924,62 +991,6 @@ BEGIN
 END
 GO
 
-/*
-IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_madera') IS NOT NULL
-    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_madera
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_madera AS
-BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Material_madera (
-        madera_ID,
-        material_madera_color,
-        material_madera_dureza
-    )
-    SELECT
-        IF mt.material_tipo=1 THEN
-            mt.material_id,
-            m.material_madera_color,
-            m.material_madera_dureza
-    FROM gd_esquema.Maestra m 
-    JOIN SILVER_CRIME_RELOADED mt on mt.material_id=
-        
-END
-GO
-
-IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_tela') IS NOT NULL
-    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_tela
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_tela AS
-BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Material_tela (
-        tela_ID,
-        material_tela_textura,
-        material_tela_color
-    )
-    SELECT  
-       -- IF mt.material_tipo = 2 THEN
-            --mt.material_id,
-            m.material_tela_textura,
-            m.material_tela_color
-    FROM gd_esquema.Maestra m
-    WHERE mt.material_tipo = 2
-      AND mt.material_id IS NOT NULL;
-END
-GO
-
-IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_relleno') IS NOT NULL
-    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_relleno
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_relleno AS
-BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Material_relleno (
-        relleno_ID,
-        material_relleno_densidad
-    )
-    SELECT
-        
-END
-GO*/
 ----------------------------------
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
 EXEC SILVER_CRIME_RELOADED.migrar_localidades;
@@ -998,10 +1009,7 @@ EXEC SILVER_CRIME_RELOADED.migrar_sillon_medida;
 EXEC SILVER_CRIME_RELOADED.migrar_sillon;
 EXEC SILVER_CRIME_RELOADED.migrar_detalle_pedido;
 EXEC SILVER_CRIME_RELOADED.migrar_tipo_material;
-EXEC SILVER_CRIME_RELOADED.migrar_material;
+EXEC SILVER_CRIME_RELOADED.migrar_material; -- Incluye la insercion a los subtipos
 EXEC SILVER_CRIME_RELOADED.migrar_detalle_compra;
 EXEC SILVER_CRIME_RELOADED.migrar_material_sillon;
-/*
-EXEC SILVER_CRIME_RELOADED.migrar_material_madera;
-EXEC SILVER_CRIME_RELOADED.migrar_material_tela;
-EXEC SILVER_CRIME_RELOADED.migrar_material_relleno;*/
+
