@@ -821,42 +821,7 @@ BEGIN
 END
 GO
 
-IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_sillon') IS NOT NULL
-    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon AS
-BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.Material_Sillon (
-        material_ID,
-        sillon_ID,
-        material_sillon_tipo
-    )
-    SELECT 
-        mat.material_id,
-        sil.sillon_codigo,
-        mat.material_tipo_id
-        
-    FROM gd_esquema.Maestra m
-    JOIN SILVER_CRIME_RELOADED.Material mat 
-        ON mat.material_nombre = m.Material_Nombre
-        
-    JOIN SILVER_CRIME_RELOADED.Sillon sil 
-        ON sil.sillon_codigo = m.Sillon_Modelo_Codigo
-    JOIN SILVER_CRIME_RELOADED.Sillon_Medida smd 
-        ON smd.sillon_medida_alto = m.Sillon_Medida_Alto
-           AND smd.sillon_medida_ancho = m.Sillon_Medida_Ancho
-           AND smd.sillon_medida_profundidad = m.Sillon_Medida_Profundidad
-        AND sil.sillon_medida_codigo = smd.sillon_medida_codigo
-    WHERE m.Material_Nombre IS NOT NULL
-      AND m.Sillon_Modelo_Codigo IS NOT NULL
-      AND m.Sillon_Medida_Alto IS NOT NULL
-      AND m.Sillon_Medida_Ancho IS NOT NULL
-      AND m.Sillon_Medida_Profundidad IS NOT NULL
-    GROUP BY 
-        mat.material_id,
-        sil.sillon_codigo;
-END
-GO
+
 
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_tipo_material') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_tipo_material
@@ -896,6 +861,44 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_sillon') IS NOT NULL
+    DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon
+GO
+CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material_sillon AS
+BEGIN
+    INSERT INTO SILVER_CRIME_RELOADED.Material_Sillon (
+        material_ID,
+        sillon_ID,
+        material_sillon_tipo
+    )
+    SELECT 
+        mat.material_id,
+        sil.sillon_codigo,
+        mat.material_tipo_id
+        
+    FROM gd_esquema.Maestra m
+    JOIN SILVER_CRIME_RELOADED.Material mat 
+        ON mat.material_nombre = m.Material_Nombre
+        
+    JOIN SILVER_CRIME_RELOADED.Sillon sil 
+        ON sil.sillon_codigo = m.Sillon_Modelo_Codigo
+    JOIN SILVER_CRIME_RELOADED.Sillon_Medida smd 
+        ON smd.sillon_medida_alto = m.Sillon_Medida_Alto
+           AND smd.sillon_medida_ancho = m.Sillon_Medida_Ancho
+           AND smd.sillon_medida_profundidad = m.Sillon_Medida_Profundidad
+        AND sil.sillon_medida_codigo = smd.sillon_medida_codigo
+    WHERE m.Material_Nombre IS NOT NULL
+      AND m.Sillon_Modelo_Codigo IS NOT NULL
+      AND m.Sillon_Medida_Alto IS NOT NULL
+      AND m.Sillon_Medida_Ancho IS NOT NULL
+      AND m.Sillon_Medida_Profundidad IS NOT NULL
+    GROUP BY 
+        mat.material_id,
+        sil.sillon_codigo,
+        mat.material_tipo_id;
+END
+GO
+
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_detalle_compra') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_compra
 GO
@@ -921,6 +924,7 @@ BEGIN
 END
 GO
 
+/*
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_material_madera') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_material_madera
 GO
@@ -975,7 +979,7 @@ BEGIN
     SELECT
         
 END
-GO
+GO*/
 ----------------------------------
 EXEC SILVER_CRIME_RELOADED.migrar_provincias;
 EXEC SILVER_CRIME_RELOADED.migrar_localidades;
@@ -997,7 +1001,7 @@ EXEC SILVER_CRIME_RELOADED.migrar_tipo_material;
 EXEC SILVER_CRIME_RELOADED.migrar_material;
 EXEC SILVER_CRIME_RELOADED.migrar_detalle_compra;
 EXEC SILVER_CRIME_RELOADED.migrar_material_sillon;
-
+/*
 EXEC SILVER_CRIME_RELOADED.migrar_material_madera;
 EXEC SILVER_CRIME_RELOADED.migrar_material_tela;
-EXEC SILVER_CRIME_RELOADED.migrar_material_relleno;
+EXEC SILVER_CRIME_RELOADED.migrar_material_relleno;*/
