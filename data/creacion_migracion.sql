@@ -315,11 +315,9 @@ CONSTRAINT FK_Pedido_Estado FOREIGN KEY (pedido_estado_id) REFERENCES SILVER_CRI
 CONSTRAINT FK_Pedido_Sucursal FOREIGN KEY (pedido_nro_Sucursal) REFERENCES SILVER_CRIME_RELOADED.Sucursal(sucursal_nroSucursal),
 CONSTRAINT PK_Pedido PRIMARY KEY (pedido_numero,pedido_cliente_id,pedido_nro_Sucursal);
 
-
 ALTER TABLE SILVER_CRIME_RELOADED.Proveedor
 ADD CONSTRAINT PK_Proveedor PRIMARY KEY (proveedor_cuit),
 CONSTRAINT FK_Proveedor_Direccion FOREIGN KEY (proveedor_direccion) REFERENCES SILVER_CRIME_RELOADED.Direccion(direccion_id);
-
 
 ALTER TABLE SILVER_CRIME_RELOADED.Compra
 ADD  CONSTRAINT PK_Compra PRIMARY KEY (compra_numero),

@@ -10,4 +10,4 @@
 - Juan Ignacio Karabin: 2113788
 - Valentín Villanueva: 2092293
 
-- Email responsable del grupo:  jkarabin@frba.utn.edu.ar
+Email responsable del grupo:  jkarabin@frba.utn.edu.ar
