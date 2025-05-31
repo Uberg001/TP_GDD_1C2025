@@ -387,6 +387,7 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_provincias AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Provincia (provincia_nombre)
+    -- Seleccionar provincias únicas de la tabla Maestra, usando union para combinar las diferentes columnas de provincia
     SELECT DISTINCT Sucursal_Provincia AS provincia_nombre 
     FROM gd_esquema.Maestra 
     WHERE Sucursal_Provincia IS NOT NULL
@@ -407,6 +408,7 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_localidades AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Localidad (localidad_nombre, localidad_provincia_id)
+    -- Seleccionar localidades únicas de la tabla Maestra, uniendo con la tabla Provincia para obtener el ID de provincia
     SELECT DISTINCT 
         Sucursal_Localidad AS localidad_nombre, 
         P.provincia_id
@@ -439,6 +441,7 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_direcciones AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Direccion (direccion_nombre, direccion_localidad_id)
+    -- Seleccionar direcciones únicas de la tabla Maestra, uniendo con las tablas Localidad y Provincia para obtener el ID de localidad
         SELECT DISTINCT 
             M.Sucursal_Direccion AS Direccion,
             L.localidad_id
@@ -494,6 +497,7 @@ BEGIN
         cliente_direccion,
         cliente_telefono
     )
+    -- Seleccionar clientes únicos de la tabla Maestra, uniendo con las tablas Localidad y Provincia para obtener el ID de dirección
     SELECT DISTINCT
         m.Cliente_DNI,
         m.Cliente_Nombre,
@@ -521,8 +525,10 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_estados AS
 BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Estado (estado_descripcion)
+    -- Seleccionar estados únicos de la tabla Maestra
     SELECT DISTINCT Pedido_Estado as estado_descripcion FROM gd_esquema.Maestra 
     WHERE Pedido_Estado IS NOT NULL
+    -- Agregar el estado 'PENDIENTE' si no existe
     IF NOT EXISTS (
         SELECT 1 
         FROM SILVER_CRIME_RELOADED.Estado
@@ -546,6 +552,7 @@ BEGIN
         sucursal_telefono,
         sucursal_mail
     )
+    -- Seleccionar sucursales únicas de la tabla Maestra, uniendo con las tablas Localidad y Provincia para obtener el ID de dirección
     SELECT DISTINCT
         m.Sucursal_NroSucursal,
         d.direccion_id,
@@ -579,6 +586,7 @@ BEGIN
         pedido_cancelacion_fecha,
         pedido_cancelacion_motivo
     )
+    -- Seleccionar pedidos únicos de la tabla Maestra, uniendo con las tablas Cliente y Estado para obtener los IDs correspondientes
     SELECT 
         m.Pedido_Numero,
         c.cliente_id,
@@ -623,6 +631,7 @@ BEGIN
         proveedor_telefono,
         proveedor_mail
     )
+    -- Seleccionar proveedores únicos de la tabla Maestra, uniendo con las tablas Localidad y Provincia para obtener el ID de dirección
     SELECT DISTINCT
         m.Proveedor_CUIT,
         m.Proveedor_RazonSocial,
@@ -654,6 +663,7 @@ BEGIN
         compra_fecha,
         compra_total
     )
+    -- Seleccionar compras únicas de la tabla Maestra, uniendo con las tablas Proveedor y Sucursal para obtener los IDs correspondientes
     SELECT DISTINCT
         m.Compra_Numero,
         m.Sucursal_NroSucursal,
@@ -679,6 +689,7 @@ BEGIN
         factura_total,
         factura_fecha
     )
+    -- Seleccionar facturas únicas de la tabla Maestra, uniendo con la tabla Cliente para obtener el ID de cliente
     SELECT DISTINCT
         m.Factura_Numero,
         c.cliente_id,
@@ -705,6 +716,7 @@ BEGIN
         detalle_factura_cantidad,
         detalle_factura_subtotal
     )
+    -- Seleccionar detalles de factura únicos de la tabla Maestra
     SELECT DISTINCT
         m.Factura_Numero,
         m.Detalle_Factura_Precio,
@@ -728,6 +740,7 @@ BEGIN
         envio_importeSubida,
         envio_total
     )
+    -- Seleccionar envíos únicos de la tabla Maestra
     SELECT DISTINCT
         m.Factura_Numero,
         m.Envio_Fecha_Programada,
@@ -752,13 +765,14 @@ BEGIN
         sillon_modelo,
         sillon_modelo_precio_base
     )
+    -- Seleccionar modelos de sillón únicos de la tabla Maestra, agrupando por código y descripción
     SELECT 
         m.Sillon_Modelo_Codigo,
         MIN(m.Sillon_Modelo_Descripcion),
         MIN(m.Sillon_Modelo),
         MIN(m.Sillon_Modelo_Precio)
     FROM gd_esquema.Maestra m
-    WHERE m.Sillon_Modelo_Codigo IS NOT NULL -- hay nulls en la tabla original...
+    WHERE m.Sillon_Modelo_Codigo IS NOT NULL
     group by 
         m.Sillon_Modelo_Codigo,
         m.Sillon_Modelo_Descripcion,
@@ -778,13 +792,14 @@ BEGIN
         sillon_medida_profundidad,
         sillon_medida_precio
     )
+    -- Seleccionar medidas de sillón únicas de la tabla Maestra, agrupando por alto, ancho, profundidad y precio
     SELECT 
         m.Sillon_Medida_Alto,
         m.Sillon_Medida_Ancho,
         m.Sillon_Medida_Profundidad,
         m.Sillon_Medida_Precio
     FROM gd_esquema.Maestra m
-    WHERE m.Sillon_Medida_Alto IS NOT NULL --nulls en la tabla original....
+    WHERE m.Sillon_Medida_Alto IS NOT NULL
       AND m.Sillon_Medida_Ancho IS NOT NULL
       AND m.Sillon_Medida_Profundidad IS NOT NULL
       AND m.Sillon_Medida_Precio IS NOT NULL
@@ -806,6 +821,7 @@ BEGIN
         sillon_modelo_codigo,
         sillon_medida_codigo
     )
+    -- Seleccionar sillones únicos de la tabla Maestra, uniendo con la tabla Sillon_medida para obtener el código de medida
     SELECT 
         m.Sillon_Codigo,
         m.Sillon_Modelo_Codigo,
@@ -837,6 +853,7 @@ BEGIN
         detalle_pedido_cliente_id,
         detalle_pedido_nro_sucursal
     )
+    -- Seleccionar detalles de pedido únicos de la tabla Maestra, uniendo con las tablas Cliente y Sillon para obtener los IDs correspondientes
     SELECT 
         m.Sillon_Codigo,
         m.Pedido_Numero,
@@ -871,6 +888,7 @@ BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Tipo_material (
         material_tipo
     )
+    -- Seleccionar tipos de material únicos de la tabla Maestra
     SELECT DISTINCT
         m.Material_Tipo
     FROM gd_esquema.Maestra m
@@ -885,7 +903,7 @@ CREATE PROCEDURE SILVER_CRIME_RELOADED.migrar_material AS
 BEGIN    
     -- Crear tabla temporal con columnas extra de la tabla maestra
     IF OBJECT_ID('tempdb..#tmpMaterial') IS NOT NULL DROP TABLE #tmpMaterial;
-
+    -- Crear tabla temporal para almacenar los materiales con sus atributos
     SELECT DISTINCT
         IDENTITY(INT, 1, 1) AS material_id,
         m.Material_Nombre AS material_nombre,
@@ -924,6 +942,7 @@ BEGIN
         material_madera_color,
         material_madera_dureza
     )
+    -- Seleccionar materiales de madera únicos de la tabla Maestra, uniendo con las tablas Tipo_material y Material
     SELECT 
         m.material_ID,
         t.Madera_Color,
@@ -941,6 +960,7 @@ BEGIN
         material_tela_color,
         material_tela_textura
     )
+    -- Seleccionar materiales de tela únicos de la tabla Maestra, uniendo con las tablas Tipo_material y Material
     SELECT 
         m.material_ID,
         t.Tela_Color,
@@ -957,6 +977,7 @@ BEGIN
         relleno_ID,
         material_relleno_densidad
     )
+    -- Seleccionar materiales de relleno únicos de la tabla Maestra, uniendo con las tablas Tipo_material y Material
     SELECT 
         m.material_ID,
         t.Relleno_Densidad
@@ -977,6 +998,7 @@ BEGIN
         sillon_material_ID,
         sillon_ID
     )
+    -- Seleccionar materiales de sillón únicos de la tabla Maestra, uniendo con las tablas Sillon y Material
     SELECT DISTINCT
         m.material_id,
         s.sillon_codigo
@@ -1000,6 +1022,7 @@ BEGIN
         detalle_compra_cantidad,
         detalle_compra_subtotal
     )
+    -- Seleccionar detalles de compra únicos de la tabla Maestra, uniendo con la tabla Material para obtener el ID de material
     SELECT 
         m.Compra_Numero,
         mat.material_id,
