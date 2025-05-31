@@ -109,7 +109,6 @@ BEGIN
 END
 GO
 
-
 -- ELIMINACION DE TABLAS, FKS Y PROCEDURES
 EXEC SILVER_CRIME_RELOADED.borrar_fks;
 EXEC SILVER_CRIME_RELOADED.borrar_tablas;
@@ -282,7 +281,6 @@ CREATE TABLE SILVER_CRIME_RELOADED.Material_relleno (
 
 CREATE TABLE SILVER_CRIME_RELOADED.Material_sillon (
     sillon_material_ID INT NOT NULL,
---    material_sillon_tipo INT NOT NULL,
     sillon_ID BIGINT NOT NULL
 );
 ------------------------------------------------------------------------
@@ -525,6 +523,15 @@ BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.Estado (estado_descripcion)
     SELECT DISTINCT Pedido_Estado as estado_descripcion FROM gd_esquema.Maestra 
     WHERE Pedido_Estado IS NOT NULL
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM SILVER_CRIME_RELOADED.Estado
+        WHERE estado_descripcion = 'PENDIENTE'
+    )
+    BEGIN
+        INSERT INTO SILVER_CRIME_RELOADED.Estado (estado_descripcion)
+        VALUES ('PENDIENTE')
+    END
 END
 GO
 
@@ -816,7 +823,6 @@ BEGIN
 END
 GO
 
---migrar detalle_pedido
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_detalle_pedido') IS NOT NULL
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_detalle_pedido
 GO
