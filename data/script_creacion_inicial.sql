@@ -284,7 +284,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Material_sillon (
     sillon_ID BIGINT NOT NULL
 );
 ------------------------------------------------------------------------
--- definicion de constraints
+-- Definicion de constraints
 ALTER TABLE SILVER_CRIME_RELOADED.Provincia
 ADD CONSTRAINT PK_Provincia PRIMARY KEY (provincia_id);
 
