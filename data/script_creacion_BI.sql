@@ -136,8 +136,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.Hecho_factura (
     hecho_factura_modelo_id INT,
     hecho_factura_rango_etario_id INT,
     hecho_factura_provincia_id INT,
-    hecho_factura_compra DECIMAL(18,2),
-    hecho_factura_venta DECIMAL(18,2),
+    hecho_factura_localidad_id INT,
     hecho_factura_total DECIMAL(18,2)
 );
 
@@ -236,4 +235,9 @@ ALTER TABLE SILVER_CRIME_RELOADED.Hecho_factura ADD
     CONSTRAINT FK_Factura_Modelo FOREIGN KEY (hecho_factura_modelo_id) REFERENCES SILVER_CRIME_RELOADED.Modelo(modelo_id),
     CONSTRAINT FK_Factura_RangoEtario FOREIGN KEY (hecho_factura_rango_etario_id) REFERENCES SILVER_CRIME_RELOADED.Rango_Etario(rango_etario_id),
     CONSTRAINT FK_Factura_Provincia FOREIGN KEY (hecho_factura_provincia_id) REFERENCES SILVER_CRIME_RELOADED.Provincia(provincia_id),
-    CONSTRAINT PK_Factura PRIMARY KEY (hecho_factura_tiempo_id, hecho_factura_sucursal_id, hecho_factura_modelo_id, hecho_factura_rango_etario_id, hecho_factura_provincia_id);
+    CONSTRAINT FK_Factura_Localidad FOREIGN KEY (hecho_factura_localidad_id) REFERENCES SILVER_CRIME_RELOADED.Localidad(localidad_id),
+    CONSTRAINT PK_Factura PRIMARY KEY (hecho_factura_tiempo_id, hecho_factura_sucursal_id, hecho_factura_modelo_id, hecho_factura_rango_etario_id, hecho_factura_provincia_id, hecho_factura_localidad_id);
+
+
+------------------------------------------------------------------------
+-- DEFINICION DE PROCEDURES PARA MIGRACION DE DATOS
