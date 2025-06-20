@@ -343,13 +343,17 @@ GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.BI_migrar_sucursal
 AS
 BEGIN
-    INSERT INTO SILVER_CRIME_RELOADED.BI_Sucursal
-        (sucursal_provincia_id, sucursal_localidad_id)
-    SELECT DISTINCT provincia_id, localidad_id
-    FROM SILVER_CRIME_RELOADED.Sucursal
-        JOIN SILVER_CRIME_RELOADED.Direccion ON direccion_id = sucursal_direccion
-        JOIN SILVER_CRIME_RELOADED.Localidad ON localidad_id = direccion_localidad_id
-        JOIN SILVER_CRIME_RELOADED.Provincia ON provincia_id = localidad_provincia_id
+    INSERT INTO SILVER_CRIME_RELOADED.BI_Sucursal (sucursal_provincia_id, sucursal_localidad_id)
+    SELECT 
+        BP.provincia_id,
+        BL.localidad_id
+    FROM SILVER_CRIME_RELOADED.Sucursal S
+        JOIN SILVER_CRIME_RELOADED.Direccion D ON S.sucursal_direccion = D.direccion_id
+        JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
+        JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
+        JOIN SILVER_CRIME_RELOADED.BI_Provincia BP ON BP.provincia_nombre = P.provincia_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Localidad BL ON BL.localidad_nombre = L.localidad_nombre
+    GROUP BY BP.provincia_id, BL.localidad_id;
 END
 GO
 
@@ -473,6 +477,7 @@ BEGIN
         hecho_factura_localidad_id,
         hecho_factura_total
     )
+    -- CORREGIR
     SELECT 
         T.tiempo_id,
         Suc.sucursal_nroSucursal,
@@ -495,6 +500,28 @@ BEGIN
 END;
 GO
 
+/*SELECT 
+    T.tiempo_id,
+    SucBI.sucursal_id,
+    M.modelo_id,
+    SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
+    P.provincia_id,
+    L.localidad_id,
+    F.factura_total
+FROM SILVER_CRIME_RELOADED.Factura F
+    JOIN SILVER_CRIME_RELOADED.Cliente C ON F.factura_cliente_id = C.cliente_id
+    JOIN SILVER_CRIME_RELOADED.Sucursal Suc ON F.factura_sucursal_nroSucursal = Suc.sucursal_nroSucursal
+    JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
+    JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
+    JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal SucBI ON SucBI.sucursal_provincia_id = P.provincia_id AND SucBI.sucursal_localidad_id = L.localidad_id
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
+    JOIN SILVER_CRIME_RELOADED.Detalle_factura DF ON DF.detalle_factura_nroFactura = F.factura_numero
+    JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DF.detalle_factura_idDetalle
+    JOIN SILVER_CRIME_RELOADED.Sillon_modelo SM ON SM.sillon_modelo_codigo = S.sillon_modelo_codigo
+    JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo;
+    */
+
 
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_hecho_compra') IS NOT NULL 
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_hecho_compra;
@@ -512,7 +539,7 @@ BEGIN
         T.tiempo_id,
         S.sucursal_id,
         TM.tipo_material_id,
-        SUM(DC.detalle_compra_subtotal)
+        SUM(DC.detalle_compra_subtotal) AS total
     FROM SILVER_CRIME_RELOADED.Compra C
         JOIN SILVER_CRIME_RELOADED.Detalle_compra DC ON C.compra_numero = DC.detalle_compra_compraID
         JOIN SILVER_CRIME_RELOADED.Material M ON DC.detalle_compra_materialID = M.material_ID
@@ -522,7 +549,9 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
         JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
         JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
-        JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON S.sucursal_provincia_id = P.provincia_id AND S.sucursal_localidad_id = L.localidad_id
+        JOIN SILVER_CRIME_RELOADED.BI_Localidad BL ON BL.localidad_nombre = L.localidad_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Provincia BP ON BP.provincia_nombre = P.provincia_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON S.sucursal_localidad_id = BL.localidad_id AND S.sucursal_provincia_id = BP.provincia_id
         JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(C.compra_fecha) AND T.tiempo_mes = MONTH(C.compra_fecha)
     GROUP BY T.tiempo_id, S.sucursal_id, TM.tipo_material_id;
 END;
@@ -571,7 +600,7 @@ BEGIN
         CASE 
             WHEN DATEPART(HOUR, P.pedido_fecha) BETWEEN 8 AND 13 THEN 1
             ELSE 2
-        END,
+        END AS turno_id,
         EBI.estado_id,
         SBI.sucursal_id
     FROM SILVER_CRIME_RELOADED.Pedido P
@@ -581,11 +610,12 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
         JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
         JOIN SILVER_CRIME_RELOADED.Provincia PR ON L.localidad_provincia_id = PR.provincia_id
-        JOIN SILVER_CRIME_RELOADED.BI_Sucursal SBI ON SBI.sucursal_localidad_id = L.localidad_id AND SBI.sucursal_provincia_id = PR.provincia_id
+        JOIN SILVER_CRIME_RELOADED.BI_Localidad BL ON BL.localidad_nombre = L.localidad_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Provincia BP ON BP.provincia_nombre = PR.provincia_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Sucursal SBI ON SBI.sucursal_localidad_id = BL.localidad_id AND SBI.sucursal_provincia_id = BP.provincia_id
         JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(P.pedido_fecha) AND T.tiempo_mes = MONTH(P.pedido_fecha);
 END;
 GO
-
 
 -- Ejecutar las migraciones
 EXEC SILVER_CRIME_RELOADED.BI_migrar_provincia;
