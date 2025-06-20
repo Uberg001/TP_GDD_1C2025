@@ -10,7 +10,7 @@ END
 GO
 ----------------------------------------------------------------------------------------
 --DEFINICION DE PROCEDURES PARA ELIMINACION DE TABLAS, FKS, etc.
-IF OBJECT_ID('SILVER_CRIME_RELOADED.borrar_fks') IS NOT NULL 
+/*IF OBJECT_ID('SILVER_CRIME_RELOADED.borrar_fks') IS NOT NULL 
     DROP PROCEDURE SILVER_CRIME_RELOADED.borrar_fks 
 GO
 CREATE PROCEDURE SILVER_CRIME_RELOADED.borrar_fks
@@ -94,7 +94,7 @@ EXEC SILVER_CRIME_RELOADED.borrar_fks;
 EXEC SILVER_CRIME_RELOADED.borrar_tablas;
 EXEC SILVER_CRIME_RELOADED.borrar_procedures;
 GO
-
+*/
 -------------------------------------------------------------------------
 -- CREACION DE TABLAS
 -- Tabla Dimensión: Provincia
@@ -214,52 +214,52 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido
 ------------------------------------------------------------------------
 -- Definicion de constraints
 -- PRIMARY KEYS
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Provincia ADD CONSTRAINT PK_Provincia PRIMARY KEY (provincia_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Localidad ADD CONSTRAINT PK_Localidad PRIMARY KEY (localidad_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Sucursal ADD CONSTRAINT PK_Sucursal PRIMARY KEY (sucursal_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Tiempo ADD CONSTRAINT PK_Tiempo PRIMARY KEY (tiempo_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Modelo ADD CONSTRAINT PK_Modelo PRIMARY KEY (modelo_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Tipo_material ADD CONSTRAINT PK_Tipo_material PRIMARY KEY (tipo_material_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Rango_Etario ADD CONSTRAINT PK_Rango_Etario PRIMARY KEY (rango_etario_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Cliente ADD CONSTRAINT PK_Cliente PRIMARY KEY (cliente_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Turno ADD CONSTRAINT PK_Turno PRIMARY KEY (turno_id);
-ALTER TABLE SILVER_CRIME_RELOADED.BI_Estado ADD CONSTRAINT PK_Estado PRIMARY KEY (estado_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Provincia ADD CONSTRAINT PK_BI_Provincia PRIMARY KEY (provincia_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Localidad ADD CONSTRAINT PK_BI_Localidad PRIMARY KEY (localidad_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Sucursal ADD CONSTRAINT PK_BI_Sucursal PRIMARY KEY (sucursal_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Tiempo ADD CONSTRAINT PK_BI_Tiempo PRIMARY KEY (tiempo_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Modelo ADD CONSTRAINT PK_BI_Modelo PRIMARY KEY (modelo_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Tipo_material ADD CONSTRAINT PK_BI_Tipo_material PRIMARY KEY (tipo_material_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Rango_Etario ADD CONSTRAINT PK_BI_Rango_Etario PRIMARY KEY (rango_etario_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Cliente ADD CONSTRAINT PK_BI_Cliente PRIMARY KEY (cliente_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Turno ADD CONSTRAINT PK_BI_Turno PRIMARY KEY (turno_id);
+ALTER TABLE SILVER_CRIME_RELOADED.BI_Estado ADD CONSTRAINT PK_BI_Estado PRIMARY KEY (estado_id);
 -- FOREIGN KEYS
 -- Sucursal
 ALTER TABLE SILVER_CRIME_RELOADED.BI_Sucursal ADD 
-    CONSTRAINT FK_Sucursal_Provincia FOREIGN KEY (sucursal_provincia_id) REFERENCES SILVER_CRIME_RELOADED.BI_Provincia(provincia_id),
-    CONSTRAINT FK_Sucursal_Localidad FOREIGN KEY (sucursal_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id);
+    CONSTRAINT FK_BI_Sucursal_Provincia FOREIGN KEY (sucursal_provincia_id) REFERENCES SILVER_CRIME_RELOADED.BI_Provincia(provincia_id),
+    CONSTRAINT FK_BI_Sucursal_Localidad FOREIGN KEY (sucursal_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id);
 
 -- Hecho_compra
 ALTER TABLE SILVER_CRIME_RELOADED.BI_Hecho_compra ADD 
-    CONSTRAINT FK_Compra_Tiempo FOREIGN KEY (hecho_compra_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
-    CONSTRAINT FK_Compra_Sucursal FOREIGN KEY (hecho_compra_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
-    CONSTRAINT FK_Compra_TipoMat FOREIGN KEY (hecho_compra_tipo_material_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tipo_material(tipo_material_id),
-    CONSTRAINT PK_Compra PRIMARY KEY (hecho_compra_tiempo_id, hecho_compra_sucursal_id, hecho_compra_tipo_material_id);
+    CONSTRAINT FK_BI_Compra_Tiempo FOREIGN KEY (hecho_compra_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
+    CONSTRAINT FK_BI_Compra_Sucursal FOREIGN KEY (hecho_compra_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
+    CONSTRAINT FK_BI_Compra_TipoMat FOREIGN KEY (hecho_compra_tipo_material_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tipo_material(tipo_material_id),
+    CONSTRAINT PK_BI_Compra PRIMARY KEY (hecho_compra_tiempo_id, hecho_compra_sucursal_id, hecho_compra_tipo_material_id);
 -- Hecho_envio
 ALTER TABLE SILVER_CRIME_RELOADED.BI_Hecho_envio ADD 
-    CONSTRAINT FK_Envio_Tiempo FOREIGN KEY (hecho_envio_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
-    CONSTRAINT FK_Envio_Localidad FOREIGN KEY (hecho_envio_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id),
-    CONSTRAINT FK_Envio_Cliente FOREIGN KEY (hecho_envio_cliente_id) REFERENCES SILVER_CRIME_RELOADED.BI_Cliente(cliente_id),
-    CONSTRAINT PK_Envio PRIMARY KEY (hecho_envio_tiempo_id, hecho_envio_localidad_id, hecho_envio_cliente_id);
+    CONSTRAINT FK_BI_Envio_Tiempo FOREIGN KEY (hecho_envio_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
+    CONSTRAINT FK_BI_Envio_Localidad FOREIGN KEY (hecho_envio_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id),
+    CONSTRAINT FK_BI_Envio_Cliente FOREIGN KEY (hecho_envio_cliente_id) REFERENCES SILVER_CRIME_RELOADED.BI_Cliente(cliente_id),
+    CONSTRAINT PK_BI_Envio PRIMARY KEY (hecho_envio_tiempo_id, hecho_envio_localidad_id, hecho_envio_cliente_id);
 
 -- Hecho_pedido
 ALTER TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido ADD 
-    CONSTRAINT FK_Pedido_Tiempo FOREIGN KEY (hecho_pedido_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
-    CONSTRAINT FK_Pedido_Turno FOREIGN KEY (hecho_pedido_turno_id) REFERENCES SILVER_CRIME_RELOADED.BI_Turno(turno_id),
-    CONSTRAINT FK_Pedido_Estado FOREIGN KEY (hecho_pedido_estado_id) REFERENCES SILVER_CRIME_RELOADED.BI_Estado(estado_id),
-    CONSTRAINT FK_Pedido_Sucursal FOREIGN KEY (hecho_pedido_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
-    CONSTRAINT PK_Pedido PRIMARY KEY (hecho_pedido_tiempo_id, hecho_pedido_turno_id, hecho_pedido_estado_id, hecho_pedido_sucursal_id);
+    CONSTRAINT FK_BI_Pedido_Tiempo FOREIGN KEY (hecho_pedido_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
+    CONSTRAINT FK_BI_Pedido_Turno FOREIGN KEY (hecho_pedido_turno_id) REFERENCES SILVER_CRIME_RELOADED.BI_Turno(turno_id),
+    CONSTRAINT FK_BI_Pedido_Estado FOREIGN KEY (hecho_pedido_estado_id) REFERENCES SILVER_CRIME_RELOADED.BI_Estado(estado_id),
+    CONSTRAINT FK_BI_Pedido_Sucursal FOREIGN KEY (hecho_pedido_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
+    CONSTRAINT PK_BI_Pedido PRIMARY KEY (hecho_pedido_tiempo_id, hecho_pedido_turno_id, hecho_pedido_estado_id, hecho_pedido_sucursal_id);
 
 -- Hecho_factura
 ALTER TABLE SILVER_CRIME_RELOADED.BI_Hecho_factura ADD 
-    CONSTRAINT FK_Factura_Tiempo FOREIGN KEY (hecho_factura_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
-    CONSTRAINT FK_Factura_Sucursal FOREIGN KEY (hecho_factura_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
-    CONSTRAINT FK_Factura_Modelo FOREIGN KEY (hecho_factura_modelo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Modelo(modelo_id),
-    CONSTRAINT FK_Factura_RangoEtario FOREIGN KEY (hecho_factura_rango_etario_id) REFERENCES SILVER_CRIME_RELOADED.BI_Rango_Etario(rango_etario_id),
-    CONSTRAINT FK_Factura_Provincia FOREIGN KEY (hecho_factura_provincia_id) REFERENCES SILVER_CRIME_RELOADED.BI_Provincia(provincia_id),
-    CONSTRAINT FK_Factura_Localidad FOREIGN KEY (hecho_factura_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id),
-    CONSTRAINT PK_Factura PRIMARY KEY (hecho_factura_tiempo_id, hecho_factura_sucursal_id, hecho_factura_modelo_id, hecho_factura_rango_etario_id, hecho_factura_provincia_id, hecho_factura_localidad_id);
+    CONSTRAINT FK_BI_Factura_Tiempo FOREIGN KEY (hecho_factura_tiempo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Tiempo(tiempo_id),
+    CONSTRAINT FK_BI_Factura_Sucursal FOREIGN KEY (hecho_factura_sucursal_id) REFERENCES SILVER_CRIME_RELOADED.BI_Sucursal(sucursal_id),
+    CONSTRAINT FK_BI_Factura_Modelo FOREIGN KEY (hecho_factura_modelo_id) REFERENCES SILVER_CRIME_RELOADED.BI_Modelo(modelo_id),
+    CONSTRAINT FK_BI_Factura_RangoEtario FOREIGN KEY (hecho_factura_rango_etario_id) REFERENCES SILVER_CRIME_RELOADED.BI_Rango_Etario(rango_etario_id),
+    CONSTRAINT FK_BI_Factura_Provincia FOREIGN KEY (hecho_factura_provincia_id) REFERENCES SILVER_CRIME_RELOADED.BI_Provincia(provincia_id),
+    CONSTRAINT FK_BI_Factura_Localidad FOREIGN KEY (hecho_factura_localidad_id) REFERENCES SILVER_CRIME_RELOADED.BI_Localidad(localidad_id),
+    CONSTRAINT PK_BI_Factura PRIMARY KEY (hecho_factura_tiempo_id, hecho_factura_sucursal_id, hecho_factura_modelo_id, hecho_factura_rango_etario_id, hecho_factura_provincia_id, hecho_factura_localidad_id);
 
 -------------------------------------------------------------------------------------------------
 -- FUNCIONES AUXILIARES DE LA MIGRACION
@@ -348,7 +348,8 @@ BEGIN
     SELECT DISTINCT provincia_id, localidad_id
     FROM SILVER_CRIME_RELOADED.Sucursal
         JOIN SILVER_CRIME_RELOADED.Direccion ON direccion_id = sucursal_direccion
-        JOIN SILVER_CRIME_RELOADED.Localidad ON localidad_id = direccion_localidad
+        JOIN SILVER_CRIME_RELOADED.Localidad ON localidad_id = direccion_localidad_id
+        JOIN SILVER_CRIME_RELOADED.Provincia ON provincia_id = localidad_provincia_id
 END
 GO
 
@@ -474,7 +475,7 @@ BEGIN
     )
     SELECT 
         T.tiempo_id,
-        S.sucursal_id,
+        Suc.sucursal_nroSucursal,
         M.modelo_id,
         SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
         P.provincia_id,
