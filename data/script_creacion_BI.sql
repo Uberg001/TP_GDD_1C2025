@@ -10,91 +10,91 @@ END
 GO
 ----------------------------------------------------------------------------------------
 --DEFINICION DE PROCEDURES PARA ELIMINACION DE TABLAS, FKS, etc.
-/*IF OBJECT_ID('SILVER_CRIME_RELOADED.borrar_fks') IS NOT NULL 
-    DROP PROCEDURE SILVER_CRIME_RELOADED.borrar_fks 
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.borrar_fks
-AS
+IF OBJECT_ID('SILVER_CRIME_RELOADED.BI_borrar_fks') IS NOT NULL 
+    DROP PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_fks
+GO 
+CREATE PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_fks AS
 BEGIN
-    DECLARE @query nvarchar(255)
+    DECLARE @query nvarchar(255) 
     DECLARE query_cursor CURSOR FOR 
     SELECT 'ALTER TABLE ' 
         + object_schema_name(k.parent_object_id) 
         + '.[' + Object_name(k.parent_object_id) 
-        + '] DROP CONSTRAINT ' + k.NAME query
+        + '] DROP CONSTRAINT ' + k.NAME query 
     FROM sys.foreign_keys k
+    WHERE Object_name(k.parent_object_id) LIKE 'BI_%'
 
-    OPEN query_cursor
-    FETCH NEXT FROM query_cursor INTO @query
+    OPEN query_cursor 
+    FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
-    BEGIN
-        EXEC sp_executesql @query
-        FETCH NEXT FROM query_cursor INTO @query
+    BEGIN 
+        EXEC sp_executesql @query 
+        FETCH NEXT FROM query_cursor INTO @query 
     END
-    CLOSE query_cursor
-    DEALLOCATE query_cursor
-END
-GO
 
-IF OBJECT_ID('SILVER_CRIME_RELOADED.borrar_tablas') IS NOT NULL 
-  DROP PROCEDURE SILVER_CRIME_RELOADED.borrar_tablas
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.borrar_tablas
-AS
+    CLOSE query_cursor 
+    DEALLOCATE query_cursor 
+END
+GO 
+
+IF OBJECT_ID('SILVER_CRIME_RELOADED.BI_borrar_tablas') IS NOT NULL 
+  DROP PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_tablas
+GO 
+CREATE PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_tablas AS
 BEGIN
-    DECLARE @query nvarchar(255)
+    DECLARE @query nvarchar(255) 
     DECLARE query_cursor CURSOR FOR  
         SELECT 'DROP TABLE SILVER_CRIME_RELOADED.' + name
-    FROM sys.tables
-    WHERE schema_id = (SELECT schema_id
-    FROM sys.schemas
-    WHERE name = 'SILVER_CRIME_RELOADED')
-
-    OPEN query_cursor
-    FETCH NEXT FROM query_cursor INTO @query
+        FROM  sys.tables 
+        WHERE schema_id = (
+			SELECT schema_id 
+			FROM sys.schemas
+			WHERE name = 'SILVER_CRIME_RELOADED'
+		) AND name LIKE 'BI_%'
+    
+    OPEN query_cursor 
+    FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
-    BEGIN
-        EXEC sp_executesql @query
-        FETCH NEXT FROM query_cursor INTO @query
-    END
-    CLOSE query_cursor
+    BEGIN 
+        EXEC sp_executesql @query 
+        FETCH NEXT FROM query_cursor INTO @query 
+    END 
+
+    CLOSE query_cursor 
     DEALLOCATE query_cursor
 END
-GO
+GO 
 
-IF OBJECT_ID('SILVER_CRIME_RELOADED.borrar_procedures') IS NOT NULL 
-    DROP PROCEDURE SILVER_CRIME_RELOADED.borrar_procedures
-GO
-CREATE PROCEDURE SILVER_CRIME_RELOADED.borrar_procedures
-AS
+IF OBJECT_ID('SILVER_CRIME_RELOADED.BI_borrar_procedimientos') IS NOT NULL 
+    DROP PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_procedimientos
+GO 
+CREATE PROCEDURE SILVER_CRIME_RELOADED.BI_borrar_procedimientos AS
 BEGIN
-    DECLARE @query nvarchar(255)
+    DECLARE @query nvarchar(255) 
     DECLARE query_cursor CURSOR FOR  
         SELECT 'DROP PROCEDURE SILVER_CRIME_RELOADED.' + name
-    FROM sys.procedures
-    WHERE schema_id = (SELECT schema_id
-        FROM sys.schemas
-        WHERE name = 'SILVER_CRIME_RELOADED') AND name LIKE 'BI_migrar_%'
-
-    OPEN query_cursor
-    FETCH NEXT FROM query_cursor INTO @query
+        FROM  sys.procedures 
+        WHERE schema_id = (SELECT schema_id FROM sys.schemas WHERE name = 'SILVER_CRIME_RELOADED') AND name LIKE 'bi_migrar_%'
+    
+    OPEN query_cursor 
+    FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
-    BEGIN
-        EXEC sp_executesql @query
-        FETCH NEXT FROM query_cursor INTO @query
-    END
+    BEGIN 
+        EXEC sp_executesql @query 
+        FETCH NEXT FROM query_cursor INTO @query 
+    END 
 
-    CLOSE query_cursor
-    DEALLOCATE query_cursor
+    CLOSE query_cursor 
+    DEALLOCATE query_cursor 
 END
-GO
+GO 
 
 -- ELIMINACION DE TABLAS, FKS Y PROCEDURES
-EXEC SILVER_CRIME_RELOADED.borrar_fks;
-EXEC SILVER_CRIME_RELOADED.borrar_tablas;
-EXEC SILVER_CRIME_RELOADED.borrar_procedures;
+EXEC SILVER_CRIME_RELOADED.BI_borrar_fks;
+EXEC SILVER_CRIME_RELOADED.BI_borrar_tablas;
+EXEC SILVER_CRIME_RELOADED.BI_borrar_procedimientos;
 GO
-*/
+
 -------------------------------------------------------------------------
 -- CREACION DE TABLAS
 -- Tabla Dimensión: Provincia
@@ -500,29 +500,6 @@ BEGIN
 END;
 GO
 
-/*SELECT 
-    T.tiempo_id,
-    SucBI.sucursal_id,
-    M.modelo_id,
-    SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
-    P.provincia_id,
-    L.localidad_id,
-    F.factura_total
-FROM SILVER_CRIME_RELOADED.Factura F
-    JOIN SILVER_CRIME_RELOADED.Cliente C ON F.factura_cliente_id = C.cliente_id
-    JOIN SILVER_CRIME_RELOADED.Sucursal Suc ON F.factura_sucursal_nroSucursal = Suc.sucursal_nroSucursal
-    JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
-    JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
-    JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
-    JOIN SILVER_CRIME_RELOADED.BI_Sucursal SucBI ON SucBI.sucursal_provincia_id = P.provincia_id AND SucBI.sucursal_localidad_id = L.localidad_id
-    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
-    JOIN SILVER_CRIME_RELOADED.Detalle_factura DF ON DF.detalle_factura_nroFactura = F.factura_numero
-    JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DF.detalle_factura_idDetalle
-    JOIN SILVER_CRIME_RELOADED.Sillon_modelo SM ON SM.sillon_modelo_codigo = S.sillon_modelo_codigo
-    JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo;
-    */
-
-
 IF OBJECT_ID('SILVER_CRIME_RELOADED.migrar_hecho_compra') IS NOT NULL 
     DROP PROCEDURE SILVER_CRIME_RELOADED.migrar_hecho_compra;
 GO
@@ -632,7 +609,45 @@ EXEC SILVER_CRIME_RELOADED.migrar_hecho_factura;
 EXEC SILVER_CRIME_RELOADED.migrar_hecho_compra;
 EXEC SILVER_CRIME_RELOADED.migrar_hecho_envio;
 EXEC SILVER_CRIME_RELOADED.migrar_hecho_pedido;
+GO
 
+-- TODO: Vistas
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_ganancias AS
+SELECT 1
+GO
 
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_factura_promedio_mensual AS
+SELECT 1
+GO
 
--- Vistas
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_rendimiento_modelos AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_volumen_pedidos AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_conversion_pedidos AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_tiempo_promedio_fabricacion AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_promedio_compras AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
+SELECT 1
+GO
+
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_localidades_con_mayor_costo_de_envio AS
+SELECT 1
+GO
