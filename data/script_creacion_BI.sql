@@ -168,7 +168,10 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Cliente (
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_envio (
     hecho_envio_tiempo_id INT NOT NULL,
     hecho_envio_localidad_id INT NOT NULL,
-    hecho_envio_cliente_id INT NOT NULL
+    hecho_envio_cliente_id INT NOT NULL,
+    hecho_envio_importe_total DECIMAL(18,2), 
+    hecho_envio_cantidad INT, 
+    hecho_envio_cumplidos INT -- CANTIDAD DE ENVÍOS CUMPLIDOS
 );
 
 -- Tabla Dimensión: Turno
@@ -188,7 +191,8 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido (
     hecho_pedido_tiempo_id INT NOT NULL,
     hecho_pedido_turno_id INT NOT NULL,
     hecho_pedido_estado_id INT NOT NULL,
-    hecho_pedido_sucursal_id INT NOT NULL
+    hecho_pedido_sucursal_id INT NOT NULL,
+    hecho_pedido_cantidad INT
 );
 
 ------------------------------------------------------------------------
@@ -523,12 +527,18 @@ BEGIN
     INSERT INTO SILVER_CRIME_RELOADED.BI_Hecho_envio (
         hecho_envio_tiempo_id,
         hecho_envio_localidad_id,
-        hecho_envio_cliente_id
+        hecho_envio_cliente_id,
+        hecho_envio_importe_total,
+        hecho_envio_cantidad,
+        hecho_envio_cumplidos
     )
     SELECT 
         T.tiempo_id,
         L.localidad_id,
-        CBI.cliente_id
+        CBI.cliente_id,
+        SUM(E.envio_total) AS importe_total,
+        COUNT(E.envio_fecha_programada) AS total_envios,
+        sum(CASE WHEN e.envio_Fecha<=e.envio_fecha_programada THEN 1  else 0 END) AS cumplidos
     FROM SILVER_CRIME_RELOADED.Envio E
         JOIN SILVER_CRIME_RELOADED.Factura F ON E.envio_nroFactura = F.factura_numero
         JOIN SILVER_CRIME_RELOADED.Cliente C ON F.factura_cliente_id = C.cliente_id
@@ -536,7 +546,11 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Localidad Loc ON D.direccion_localidad_id = Loc.localidad_id
         JOIN SILVER_CRIME_RELOADED.BI_Localidad L ON L.localidad_nombre = Loc.localidad_nombre
         JOIN SILVER_CRIME_RELOADED.BI_Cliente CBI ON CBI.cliente_nombre = C.cliente_nombre
-        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(E.envio_fecha_programada) AND T.tiempo_mes = MONTH(E.envio_fecha_programada);
+        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(E.envio_fecha_programada) AND T.tiempo_mes = MONTH(E.envio_fecha_programada)
+    GROUP BY
+        T.tiempo_id,
+        L.localidad_id,
+        CBI.cliente_id
 END;
 GO
 
@@ -550,7 +564,8 @@ BEGIN
         hecho_pedido_tiempo_id,
         hecho_pedido_turno_id,
         hecho_pedido_estado_id,
-        hecho_pedido_sucursal_id
+        hecho_pedido_sucursal_id,
+        hecho_pedido_cantidad
     )
     SELECT 
         T.tiempo_id,
@@ -559,7 +574,8 @@ BEGIN
             ELSE 2
         END AS turno_id,
         EBI.estado_id,
-        SBI.sucursal_id
+        SBI.sucursal_id,
+        COUNT(P.pedido_numero) AS cantidad
     FROM SILVER_CRIME_RELOADED.Pedido P
         JOIN SILVER_CRIME_RELOADED.Estado E ON P.pedido_estado_id = E.estado_id
         JOIN SILVER_CRIME_RELOADED.BI_Estado EBI ON EBI.estado_nombre = E.estado_descripcion
@@ -601,18 +617,23 @@ GO
 
 -- TODO: Vistas
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_ganancias AS
+-- total de ingresos (facturacion) - total de egresos (compras), por cada mes y por cada sucursal
 SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_factura_promedio_mensual AS
+--valor promedio de facturas segun la provincia de la sucursal para cada cuatrimestre de cada año.
+-- se calcula en funcion de la sumatoria de las facturas sobre el total de las mismas durante dicho periodo
 SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_rendimiento_modelos AS
+--los 3 modelos con mayores ventas para cada cuatrimestre de cada año segun la localidad de la sucursal y rango etario de los clientes
 SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_volumen_pedidos AS
+-- cantidad de pedidos por turno, por sucursal segun el mes de cada año
 SELECT T.tiempo_anio,
     T.tiempo_mes,
     S.sucursal_id,
@@ -631,22 +652,41 @@ GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_conversion_pedidos AS
 --porcentaje de pedidos segun estado, por cuatrimestre y sucursal
-SELECT 1
+SELECT T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_id,
+    E.estado_id,
+    sum(hecho_pedido_cantidad) AS cantidad_pedidos,
+    COUNT(HP.hecho_pedido_estado_id) * 100.0 / sum(hecho_pedido_cantidad) as porcentaje_conversion
+FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Estado E ON HP.hecho_pedido_estado_id = E.estado_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
+GROUP BY
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_id,
+    E.estado_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_tiempo_promedio_fabricacion AS
+--tiempo promedio que tarda cada sucursal entre que se registra un pedido y se registra la factura para el mismo. Por cuatrimestre y por sucursal.
 SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_promedio_compras AS
-SELECT avg (hecho_compra_importe_total) AS promedio_compras
+-- importe promedio de compras por mes
+SELECT tiempo_anio, tiempo_mes,
+    AVG(hecho_compra_importe_total) AS promedio_compras
 FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo ON hecho_compra_tiempo_id = tiempo_id
+GROUP BY tiempo_anio, tiempo_mes
 GO
 select * from SILVER_CRIME_RELOADED.BI_promedio_compras go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
-SELECT 
-    tipo_material_nombre,
+--importe total gastado por tipo de material, sucursal y cuatrimestre
+SELECT tipo_material_nombre,
     SUM(hecho_compra_importe_total) AS total_compras
     FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
     JOIN SILVER_CRIME_RELOADED.BI_Tipo_material ON hecho_compra_tipo_material_id = tipo_material_id
@@ -655,9 +695,18 @@ GO
 select * FROM SILVER_CRIME_RELOADED.BI_compras_X_tipo_material go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
-SELECT 1
+-- porcentaje de cumplimento de envios en los tiempos programados por mes.
+-- se calcula teniendo en cuenta los envios cumplidos en fecha sobre el total de envios para el periodo
+SELECT --checkear
+    T.tiempo_anio,
+    T.tiempo_mes,
+    SUM(HE.hecho_envio_cumplidos) / sum(HE.hecho_envio_cantidad) * 100 AS porcentaje_cumplimiento
+    from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HE.hecho_envio_tiempo_id = T.tiempo_id
+    GROUP BY T.tiempo_anio, T.tiempo_mes
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_localidades_con_mayor_costo_de_envio AS
-SELECT 1
+-- las 3 (tomando la localidad del cliente) con mayor promedio de costo de envio (total)
+select 1
 GO
