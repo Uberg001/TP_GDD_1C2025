@@ -708,5 +708,11 @@ GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_localidades_con_mayor_costo_de_envio AS
 -- las 3 (tomando la localidad del cliente) con mayor promedio de costo de envio (total)
-select 1
+select 
+    top 3 L.localidad_nombre,
+    AVG(HE.hecho_envio_importe_total) AS promedio_costo_envio
+from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
+    JOIN SILVER_CRIME_RELOADED.BI_Localidad L ON HE.hecho_envio_localidad_id = L.localidad_id
+GROUP BY L.localidad_nombre
+ORDER BY promedio_costo_envio DESC
 GO
