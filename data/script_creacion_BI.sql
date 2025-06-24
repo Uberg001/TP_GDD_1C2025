@@ -101,14 +101,14 @@ GO
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Provincia
 (
     provincia_id INT IDENTITY(1,1),
-    provincia_nombre NVARCHAR(55)
+    provincia_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Localidad
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Localidad
 (
     localidad_id INT IDENTITY(1,1),
-    localidad_nombre NVARCHAR(55)
+    localidad_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Sucursal
@@ -134,7 +134,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Tiempo
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Modelo
 (
     modelo_id INT IDENTITY(1,1),
-    modelo_nombre NVARCHAR(55)
+    modelo_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Rango_Etario
@@ -161,7 +161,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_factura
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Tipo_material
 (
     tipo_material_id INT IDENTITY(1,1),
-    tipo_material_nombre NVARCHAR(65)
+    tipo_material_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_compra
@@ -177,7 +177,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_compra
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Cliente
 (
     cliente_id INT IDENTITY(1,1),
-    cliente_nombre NVARCHAR(55)
+    cliente_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_envio
@@ -199,7 +199,7 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Turno
 CREATE TABLE SILVER_CRIME_RELOADED.BI_Estado
 (
     estado_id INT IDENTITY(1,1),
-    estado_nombre NVARCHAR(55)
+    estado_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_pedido
@@ -492,11 +492,14 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
         JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
         JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
-        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
-        JOIN SILVER_CRIME_RELOADED.Detalle_factura DF ON DF.detalle_factura_nroFactura = F.factura_numero
-        JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DF.detalle_factura_idDetalle
-        JOIN SILVER_CRIME_RELOADED.Sillon_modelo SM ON SM.sillon_modelo_codigo = S.sillon_modelo_codigo
-        JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo;
+        --join SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
+    GROUP BY
+        T.tiempo_id,
+        sbi.sucursal_nroSucursal,
+        SM.sillon_modelo_codigo,
+        SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
+        P.provincia_id,
+        L.localidad_id;
 END;
 GO
 
@@ -637,12 +640,20 @@ SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_promedio_compras AS
-SELECT 1
+SELECT avg (hecho_compra_importe_total) AS promedio_compras
+FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
 GO
+select * from SILVER_CRIME_RELOADED.BI_promedio_compras go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
-SELECT 1
+SELECT 
+    tipo_material_nombre,
+    SUM(hecho_compra_importe_total) AS total_compras
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
+    JOIN SILVER_CRIME_RELOADED.BI_Tipo_material ON hecho_compra_tipo_material_id = tipo_material_id
+    GROUP BY tipo_material_nombre
 GO
+select * FROM SILVER_CRIME_RELOADED.BI_compras_X_tipo_material go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
 SELECT 1
