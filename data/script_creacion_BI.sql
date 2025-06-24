@@ -23,7 +23,6 @@ BEGIN
         + '] DROP CONSTRAINT ' + k.NAME query 
     FROM sys.foreign_keys k
     WHERE Object_name(k.parent_object_id) LIKE 'BI_%'
-
     OPEN query_cursor 
     FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
@@ -31,7 +30,6 @@ BEGIN
         EXEC sp_executesql @query 
         FETCH NEXT FROM query_cursor INTO @query 
     END
-
     CLOSE query_cursor 
     DEALLOCATE query_cursor 
 END
@@ -51,15 +49,13 @@ BEGIN
 			FROM sys.schemas
 			WHERE name = 'SILVER_CRIME_RELOADED'
 		) AND name LIKE 'BI_%'
-    
     OPEN query_cursor 
     FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
     BEGIN 
         EXEC sp_executesql @query 
         FETCH NEXT FROM query_cursor INTO @query 
-    END 
-
+    END
     CLOSE query_cursor 
     DEALLOCATE query_cursor
 END
@@ -75,15 +71,13 @@ BEGIN
         SELECT 'DROP PROCEDURE SILVER_CRIME_RELOADED.' + name
         FROM  sys.procedures 
         WHERE schema_id = (SELECT schema_id FROM sys.schemas WHERE name = 'SILVER_CRIME_RELOADED') AND name LIKE 'bi_migrar_%'
-    
     OPEN query_cursor 
     FETCH NEXT FROM query_cursor INTO @query 
     WHILE @@FETCH_STATUS = 0 
     BEGIN 
         EXEC sp_executesql @query 
         FETCH NEXT FROM query_cursor INTO @query 
-    END 
-
+    END
     CLOSE query_cursor 
     DEALLOCATE query_cursor 
 END
@@ -98,30 +92,26 @@ GO
 -------------------------------------------------------------------------
 -- CREACION DE TABLAS
 -- Tabla Dimensión: Provincia
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Provincia
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Provincia (
     provincia_id INT IDENTITY(1,1),
     provincia_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Localidad
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Localidad
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Localidad (
     localidad_id INT IDENTITY(1,1),
     localidad_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Sucursal
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Sucursal
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Sucursal (
     sucursal_id INT IDENTITY(1,1),
     sucursal_provincia_id INT,
     sucursal_localidad_id INT
 );
 
 -- Tabla Dimensión: Tiempo
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Tiempo
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Tiempo (
     tiempo_id INT IDENTITY(1,1),
     tiempo_anio INT,
     tiempo_cuatrimestre INT,
@@ -131,23 +121,20 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Tiempo
 );
 
 -- Tabla Dimensión: Modelo
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Modelo
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Modelo (
     modelo_id INT IDENTITY(1,1),
     modelo_nombre NVARCHAR(255)
 );
 
 -- Tabla Dimensión: Rango_Etario
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Rango_Etario
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Rango_Etario (
     rango_etario_id INT IDENTITY(1,1),
     rango_etario_nombre NVARCHAR(50) NOT NULL,
     CONSTRAINT CHK_RangoEtarioNombre CHECK (rango_etario_nombre IN ('JUVENTUD', 'ADULTEZ_TEMPRANA', 'ADULTEZ_MEDIA', 'ADULTEZ_AVANZADA'))
 );
 
 -- Tabla de Hechos: Hecho_factura
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_factura
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_factura (
     hecho_factura_tiempo_id INT NOT NULL,
     hecho_factura_sucursal_id INT NOT NULL,
     hecho_factura_modelo_id INT NOT NULL,
@@ -158,15 +145,13 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_factura
 );
 
 -- Tabla Dimensión: Tipo_material
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Tipo_material
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Tipo_material (
     tipo_material_id INT IDENTITY(1,1),
     tipo_material_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_compra
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_compra
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_compra (
     hecho_compra_tiempo_id INT NOT NULL,
     hecho_compra_sucursal_id INT NOT NULL,
     hecho_compra_tipo_material_id INT NOT NULL,
@@ -174,37 +159,32 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_compra
 );
 
 -- Tabla Dimensión: Cliente
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Cliente
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Cliente (
     cliente_id INT IDENTITY(1,1),
     cliente_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_envio
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_envio
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_envio (
     hecho_envio_tiempo_id INT NOT NULL,
     hecho_envio_localidad_id INT NOT NULL,
     hecho_envio_cliente_id INT NOT NULL
 );
 
 -- Tabla Dimensión: Turno
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Turno
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Turno (
     turno_id INT IDENTITY(1,1) ,
     turno_nombre NVARCHAR(55)
 );
 
 -- Tabla Dimensión: Estado
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Estado
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Estado (
     estado_id INT IDENTITY(1,1),
     estado_nombre NVARCHAR(255)
 );
 
 -- Tabla de Hechos: Hecho_pedido
-CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido
-(
+CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido (
     hecho_pedido_tiempo_id INT NOT NULL,
     hecho_pedido_turno_id INT NOT NULL,
     hecho_pedido_estado_id INT NOT NULL,
@@ -492,14 +472,11 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Direccion D ON Suc.sucursal_direccion = D.direccion_id
         JOIN SILVER_CRIME_RELOADED.Localidad L ON D.direccion_localidad_id = L.localidad_id
         JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
-        --join SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
-    GROUP BY
-        T.tiempo_id,
-        sbi.sucursal_nroSucursal,
-        SM.sillon_modelo_codigo,
-        SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
-        P.provincia_id,
-        L.localidad_id;
+        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
+        JOIN SILVER_CRIME_RELOADED.Detalle_factura DF ON DF.detalle_factura_nroFactura = F.factura_numero
+        JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DF.detalle_factura_idDetalle
+        JOIN SILVER_CRIME_RELOADED.Sillon_modelo SM ON SM.sillon_modelo_codigo = S.sillon_modelo_codigo
+        JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo;
 END;
 GO
 
