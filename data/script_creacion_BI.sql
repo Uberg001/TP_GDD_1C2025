@@ -570,7 +570,15 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.BI_Localidad BL ON BL.localidad_nombre = L.localidad_nombre
         JOIN SILVER_CRIME_RELOADED.BI_Provincia BP ON BP.provincia_nombre = PR.provincia_nombre
         JOIN SILVER_CRIME_RELOADED.BI_Sucursal SBI ON SBI.sucursal_localidad_id = BL.localidad_id AND SBI.sucursal_provincia_id = BP.provincia_id
-        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(P.pedido_fecha) AND T.tiempo_mes = MONTH(P.pedido_fecha);
+        JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(P.pedido_fecha) AND T.tiempo_mes = MONTH(P.pedido_fecha)
+    GROUP BY 
+        T.tiempo_id, 
+        CASE 
+            WHEN DATEPART(HOUR, P.pedido_fecha) BETWEEN 8 AND 13 THEN 1
+            ELSE 2
+        END,
+        EBI.estado_id,
+        SBI.sucursal_id;
 END;
 GO
 
@@ -605,10 +613,24 @@ SELECT 1
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_volumen_pedidos AS
-SELECT 1
+SELECT T.tiempo_anio,
+    T.tiempo_mes,
+    S.sucursal_id,
+    Tu.turno_id,
+    COUNT(HP.hecho_pedido_tiempo_id) AS cantidad_pedidos
+FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Turno Tu ON HP.hecho_pedido_turno_id = Tu.turno_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
+GROUP BY 
+    T.tiempo_anio,
+    T.tiempo_mes,
+    S.sucursal_id,
+    Tu.turno_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_conversion_pedidos AS
+--porcentaje de pedidos segun estado, por cuatrimestre y sucursal
 SELECT 1
 GO
 
