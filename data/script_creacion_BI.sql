@@ -461,15 +461,14 @@ BEGIN
         hecho_factura_localidad_id,
         hecho_factura_total
     )
-    -- CORREGIR
     SELECT 
         T.tiempo_id,
-        Suc.sucursal_nroSucursal,
+        S2.sucursal_id,
         M.modelo_id,
-        SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
-        P.provincia_id,
-        L.localidad_id,
-        F.factura_total
+        SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento) as rango_etario_id,
+        BP.provincia_id,
+        BL.localidad_id,
+        sum(F.factura_total) AS total
     FROM SILVER_CRIME_RELOADED.Factura F
         JOIN SILVER_CRIME_RELOADED.Cliente C ON F.factura_cliente_id = C.cliente_id
         JOIN SILVER_CRIME_RELOADED.Sucursal Suc ON F.factura_sucursal_nroSucursal = Suc.sucursal_nroSucursal
@@ -478,9 +477,23 @@ BEGIN
         JOIN SILVER_CRIME_RELOADED.Provincia P ON L.localidad_provincia_id = P.provincia_id
         JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON T.tiempo_anio = YEAR(F.factura_fecha) AND T.tiempo_mes = MONTH(F.factura_fecha)
         JOIN SILVER_CRIME_RELOADED.Detalle_factura DF ON DF.detalle_factura_nroFactura = F.factura_numero
-        JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DF.detalle_factura_idDetalle
+
+        JOIN SILVER_CRIME_RELOADED.BI_Localidad BL ON BL.localidad_nombre = L.localidad_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Provincia BP ON BP.provincia_nombre = P.provincia_nombre
+        JOIN SILVER_CRIME_RELOADED.BI_Sucursal S2 ON S2.sucursal_localidad_id = BL.localidad_id AND S2.sucursal_provincia_id = BP.provincia_id
+        JOIN SILVER_CRIME_RELOADED.Pedido PD ON PD.pedido_cliente_id=F.factura_cliente_id
+        JOIN SILVER_CRIME_RELOADED.Detalle_pedido DPD ON DPD.detalle_pedido_idPedido=PD.pedido_numero
+        JOIN SILVER_CRIME_RELOADED.Sillon S ON S.sillon_codigo = DPD.detalle_pedido_sillon_codigo
+        
         JOIN SILVER_CRIME_RELOADED.Sillon_modelo SM ON SM.sillon_modelo_codigo = S.sillon_modelo_codigo
-        JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo;
+        JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON M.modelo_nombre = SM.sillon_modelo
+    GROUP BY
+        T.tiempo_id,
+        S2.sucursal_id,
+        M.modelo_id,
+        SILVER_CRIME_RELOADED.BI_obtener_rango_etario(C.cliente_fechaNacimiento),
+        BP.provincia_id,
+        BL.localidad_id
 END;
 GO
 
@@ -615,7 +628,6 @@ EXEC SILVER_CRIME_RELOADED.migrar_hecho_envio;
 EXEC SILVER_CRIME_RELOADED.migrar_hecho_pedido;
 GO
 
--- TODO: Vistas
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_ganancias AS
 -- total de ingresos (facturacion) - total de egresos (compras), por cada mes y por cada sucursal
 SELECT 1
@@ -624,7 +636,18 @@ GO
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_factura_promedio_mensual AS
 --valor promedio de facturas segun la provincia de la sucursal para cada cuatrimestre de cada año.
 -- se calcula en funcion de la sumatoria de las facturas sobre el total de las mismas durante dicho periodo
-SELECT 1
+SELECT 
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_provincia_id,
+    AVG(HP.hecho_factura_total) AS promedio_facturas
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_factura HP
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_factura_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_factura_sucursal_id = S.sucursal_id
+    GROUP BY
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_provincia_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_rendimiento_modelos AS
@@ -639,11 +662,11 @@ SELECT T.tiempo_anio,
     S.sucursal_id,
     Tu.turno_id,
     COUNT(HP.hecho_pedido_tiempo_id) AS cantidad_pedidos
-FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id
     JOIN SILVER_CRIME_RELOADED.BI_Turno Tu ON HP.hecho_pedido_turno_id = Tu.turno_id
     JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
-GROUP BY 
+    GROUP BY 
     T.tiempo_anio,
     T.tiempo_mes,
     S.sucursal_id,
@@ -658,11 +681,11 @@ SELECT T.tiempo_anio,
     E.estado_id,
     sum(hecho_pedido_cantidad) AS cantidad_pedidos,
     COUNT(HP.hecho_pedido_estado_id) * 100.0 / sum(hecho_pedido_cantidad) as porcentaje_conversion
-FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id
     JOIN SILVER_CRIME_RELOADED.BI_Estado E ON HP.hecho_pedido_estado_id = E.estado_id
     JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
-GROUP BY
+    GROUP BY
     T.tiempo_anio,
     T.tiempo_cuatrimestre,
     S.sucursal_id,
@@ -678,9 +701,9 @@ CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_promedio_compras AS
 -- importe promedio de compras por mes
 SELECT tiempo_anio, tiempo_mes,
     AVG(hecho_compra_importe_total) AS promedio_compras
-FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo ON hecho_compra_tiempo_id = tiempo_id
-GROUP BY tiempo_anio, tiempo_mes
+    GROUP BY tiempo_anio, tiempo_mes
 GO
 select * from SILVER_CRIME_RELOADED.BI_promedio_compras go
 
@@ -711,8 +734,8 @@ CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_localidades_con_mayor_costo_de_env
 select 
     top 3 L.localidad_nombre,
     AVG(HE.hecho_envio_importe_total) AS promedio_costo_envio
-from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
+    from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
     JOIN SILVER_CRIME_RELOADED.BI_Localidad L ON HE.hecho_envio_localidad_id = L.localidad_id
-GROUP BY L.localidad_nombre
-ORDER BY promedio_costo_envio DESC
+    GROUP BY L.localidad_nombre
+    ORDER BY promedio_costo_envio DESC
 GO
