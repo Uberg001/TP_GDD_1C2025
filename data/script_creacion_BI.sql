@@ -630,7 +630,21 @@ GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_ganancias AS
 -- total de ingresos (facturacion) - total de egresos (compras), por cada mes y por cada sucursal
-SELECT 1
+SELECT
+    T.tiempo_anio,
+    T.tiempo_mes,
+    S.sucursal_id,
+    SUM(HP.hecho_factura_total) AS total_ingresos,
+    SUM(HC.hecho_compra_importe_total) AS total_egresos,
+    SUM(HP.hecho_factura_total) - SUM(HC.hecho_compra_importe_total) AS ganancias
+FROM SILVER_CRIME_RELOADED.BI_Hecho_factura HP
+JOIN SILVER_CRIME_RELOADED.BI_Hecho_compra HC ON HP.hecho_factura_tiempo_id = HC.hecho_compra_tiempo_id
+JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_factura_tiempo_id = T.tiempo_id AND HC.hecho_compra_tiempo_id = T.tiempo_id
+JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_factura_sucursal_id = S.sucursal_id AND HC.hecho_compra_sucursal_id = S.sucursal_id
+GROUP BY
+    T.tiempo_anio,
+    T.tiempo_mes,
+    S.sucursal_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_factura_promedio_mensual AS
@@ -652,7 +666,30 @@ GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_rendimiento_modelos AS
 --los 3 modelos con mayores ventas para cada cuatrimestre de cada año segun la localidad de la sucursal y rango etario de los clientes
-SELECT 1
+SELECT TOP 3
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_localidad_id,
+    R.rango_etario_id,
+    M.modelo_nombre,
+    SUM(HP.hecho_factura_total) AS total_ventas
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_factura HP
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_factura_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_factura_sucursal_id = S.sucursal_id
+    JOIN SILVER_CRIME_RELOADED.BI_Modelo M ON HP.hecho_factura_modelo_id = M.modelo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Rango_Etario R ON HP.hecho_factura_rango_etario_id = R.rango_etario_id
+    GROUP BY
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_localidad_id,
+    R.rango_etario_id,
+    M.modelo_nombre
+    ORDER BY
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_localidad_id,
+    R.rango_etario_id,
+    SUM(HP.hecho_factura_total) DESC
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_volumen_pedidos AS
@@ -694,7 +731,18 @@ GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_tiempo_promedio_fabricacion AS
 --tiempo promedio que tarda cada sucursal entre que se registra un pedido y se registra la factura para el mismo. Por cuatrimestre y por sucursal.
-SELECT 1
+SELECT T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_id,
+    AVG(DATEDIFF(DAY, HP.hecho_pedido_tiempo_id, HF.hecho_factura_tiempo_id)) AS tiempo_promedio_fabricacion
+    FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
+    JOIN SILVER_CRIME_RELOADED.BI_Hecho_factura HF ON HP.hecho_pedido_sucursal_id = HF.hecho_factura_sucursal_id
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id AND HF.hecho_factura_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
+    GROUP BY 
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_promedio_compras AS
@@ -705,7 +753,6 @@ SELECT tiempo_anio, tiempo_mes,
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo ON hecho_compra_tiempo_id = tiempo_id
     GROUP BY tiempo_anio, tiempo_mes
 GO
-select * from SILVER_CRIME_RELOADED.BI_promedio_compras go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
 --importe total gastado por tipo de material, sucursal y cuatrimestre
@@ -715,7 +762,6 @@ SELECT tipo_material_nombre,
     JOIN SILVER_CRIME_RELOADED.BI_Tipo_material ON hecho_compra_tipo_material_id = tipo_material_id
     GROUP BY tipo_material_nombre
 GO
-select * FROM SILVER_CRIME_RELOADED.BI_compras_X_tipo_material go
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
 -- porcentaje de cumplimento de envios en los tiempos programados por mes.
