@@ -757,19 +757,27 @@ GO
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
 --importe total gastado por tipo de material, sucursal y cuatrimestre
 SELECT tipo_material_nombre,
+    T.tiempo_anio,
+    T.tiempo_cuatrimestre,
+    S.sucursal_id,
     SUM(hecho_compra_importe_total) AS total_compras
     FROM SILVER_CRIME_RELOADED.BI_Hecho_compra
     JOIN SILVER_CRIME_RELOADED.BI_Tipo_material ON hecho_compra_tipo_material_id = tipo_material_id
-    GROUP BY tipo_material_nombre
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON hecho_compra_tiempo_id = tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON hecho_compra_sucursal_id = sucursal_id
+    GROUP BY tipo_material_nombre,
+    T.tiempo_anio,  
+    T.tiempo_cuatrimestre,
+    S.sucursal_id
 GO
 
 CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
 -- porcentaje de cumplimento de envios en los tiempos programados por mes.
 -- se calcula teniendo en cuenta los envios cumplidos en fecha sobre el total de envios para el periodo
-SELECT --checkear
+SELECT
     T.tiempo_anio,
     T.tiempo_mes,
-    SUM(HE.hecho_envio_cumplidos) / sum(HE.hecho_envio_cantidad) * 100 AS porcentaje_cumplimiento
+    CAST(SUM(HE.hecho_envio_cumplidos) AS FLOAT) / ISNULL(SUM(HE.hecho_envio_cantidad), 0) * 100 AS porcentaje_cumplimiento
     from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HE.hecho_envio_tiempo_id = T.tiempo_id
     GROUP BY T.tiempo_anio, T.tiempo_mes
