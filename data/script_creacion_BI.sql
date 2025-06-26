@@ -192,7 +192,8 @@ CREATE TABLE SILVER_CRIME_RELOADED.BI_Hecho_pedido (
     hecho_pedido_turno_id INT NOT NULL,
     hecho_pedido_estado_id INT NOT NULL,
     hecho_pedido_sucursal_id INT NOT NULL,
-    hecho_pedido_cantidad INT
+    hecho_pedido_cantidad INT,
+    hecho_pedido_retraso INT -- DÍAS DE RETRASO ENTRE PEDIDO Y FACTURA
 );
 
 ------------------------------------------------------------------------
@@ -578,7 +579,8 @@ BEGIN
         hecho_pedido_turno_id,
         hecho_pedido_estado_id,
         hecho_pedido_sucursal_id,
-        hecho_pedido_cantidad
+        hecho_pedido_cantidad,
+        hecho_pedido_retraso
     )
     SELECT 
         T.tiempo_id,
@@ -588,8 +590,10 @@ BEGIN
         END AS turno_id,
         EBI.estado_id,
         SBI.sucursal_id,
-        COUNT(P.pedido_numero) AS cantidad
+        COUNT(P.pedido_numero) AS cantidad,
+        sum( DATEDIFF(DAY, P.pedido_fecha, F.factura_fecha)) AS retraso
     FROM SILVER_CRIME_RELOADED.Pedido P
+        JOIN SILVER_CRIME_RELOADED.Factura F ON P.pedido_cliente_id = F.factura_cliente_id and f.factura_sucursal_nroSucursal = P.pedido_nro_sucursal AND F.factura_fecha IS NOT NULL
         JOIN SILVER_CRIME_RELOADED.Estado E ON P.pedido_estado_id = E.estado_id
         JOIN SILVER_CRIME_RELOADED.BI_Estado EBI ON EBI.estado_nombre = E.estado_descripcion
         JOIN SILVER_CRIME_RELOADED.Sucursal Suc ON P.pedido_nro_sucursal = Suc.sucursal_nroSucursal
@@ -607,7 +611,7 @@ BEGIN
             ELSE 2
         END,
         EBI.estado_id,
-        SBI.sucursal_id;
+        SBI.sucursal_id
 END;
 GO
 
@@ -734,11 +738,11 @@ CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_tiempo_promedio_fabricacion AS
 SELECT T.tiempo_anio,
     T.tiempo_cuatrimestre,
     S.sucursal_id,
-    AVG(DATEDIFF(DAY, HP.hecho_pedido_tiempo_id, HF.hecho_factura_tiempo_id)) AS tiempo_promedio_fabricacion
+    AVG(CAST(HP.hecho_pedido_retraso AS FLOAT) / ISNULL(HP.hecho_pedido_cantidad, 0)) AS tiempo_promedio_fabricacion
     FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
     JOIN SILVER_CRIME_RELOADED.BI_Hecho_factura HF ON HP.hecho_pedido_sucursal_id = HF.hecho_factura_sucursal_id
-    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id AND HF.hecho_factura_tiempo_id = T.tiempo_id
-    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id
+    JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id-- AND HF.hecho_factura_tiempo_id = T.tiempo_id
+    JOIN SILVER_CRIME_RELOADED.BI_Sucursal S ON HP.hecho_pedido_sucursal_id = S.sucursal_id and HF.hecho_factura_sucursal_id = S.sucursal_id
     GROUP BY 
     T.tiempo_anio,
     T.tiempo_cuatrimestre,
@@ -754,7 +758,7 @@ SELECT tiempo_anio, tiempo_mes,
     GROUP BY tiempo_anio, tiempo_mes
 GO
 
-CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_X_tipo_material AS
+CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_compras_por_tipo_material AS
 --importe total gastado por tipo de material, sucursal y cuatrimestre
 SELECT tipo_material_nombre,
     T.tiempo_anio,
