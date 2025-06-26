@@ -738,7 +738,13 @@ CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_tiempo_promedio_fabricacion AS
 SELECT T.tiempo_anio,
     T.tiempo_cuatrimestre,
     S.sucursal_id,
-    AVG(CAST(HP.hecho_pedido_retraso AS FLOAT) / ISNULL(HP.hecho_pedido_cantidad, 0)) AS tiempo_promedio_fabricacion
+    AVG(
+        CASE 
+            WHEN HP.hecho_pedido_cantidad > 0 
+                THEN CAST(HP.hecho_pedido_retraso AS FLOAT) / HP.hecho_pedido_cantidad
+            ELSE NULL -- excluye del promedio si no hay cantidad
+        END
+    ) AS tiempo_promedio_fabricacion
     FROM SILVER_CRIME_RELOADED.BI_Hecho_pedido HP
     JOIN SILVER_CRIME_RELOADED.BI_Hecho_factura HF ON HP.hecho_pedido_sucursal_id = HF.hecho_factura_sucursal_id
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HP.hecho_pedido_tiempo_id = T.tiempo_id-- AND HF.hecho_factura_tiempo_id = T.tiempo_id
@@ -781,7 +787,11 @@ CREATE OR ALTER VIEW SILVER_CRIME_RELOADED.BI_cumplimiento_envios AS
 SELECT
     T.tiempo_anio,
     T.tiempo_mes,
-    CAST(SUM(HE.hecho_envio_cumplidos) AS FLOAT) / ISNULL(SUM(HE.hecho_envio_cantidad), 0) * 100 AS porcentaje_cumplimiento
+    CASE 
+        WHEN SUM(HE.hecho_envio_cantidad) > 0 
+            THEN CAST(SUM(HE.hecho_envio_cumplidos) AS FLOAT) / SUM(HE.hecho_envio_cantidad) * 100
+        ELSE 0
+    END AS porcentaje_cumplimiento
     from SILVER_CRIME_RELOADED.BI_Hecho_envio HE
     JOIN SILVER_CRIME_RELOADED.BI_Tiempo T ON HE.hecho_envio_tiempo_id = T.tiempo_id
     GROUP BY T.tiempo_anio, T.tiempo_mes
